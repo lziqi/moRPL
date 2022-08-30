@@ -2,7 +2,7 @@
 
 bool moRPL::Node::init()
 {
-    spdlog::info("计算节点初始化");
+    spdlog::info("节点设备初始化");
     cl_int err;
 
     cl_platform_id *platforms;
@@ -15,7 +15,7 @@ bool moRPL::Node::init()
     err = clGetPlatformIDs(0, NULL, &numPlatform);
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
         return false;
-    spdlog::info("平台数 : {}", numPlatform);
+    // spdlog::info("平台数 : {}", numPlatform);
 
     //初始化平台
     platforms = (cl_platform_id *)malloc(sizeof(cl_platform_id) * numPlatform);
@@ -27,7 +27,7 @@ bool moRPL::Node::init()
         return false;
     devices = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevice);
     this->gpuCount = numDevice;
-    spdlog::info("GPU设备数 : {}", numDevice);
+    // spdlog::info("GPU设备数 : {}", numDevice);
 
     //获取GPU设备对应ID
     err = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU, numDevice, devices, NULL);
@@ -38,9 +38,9 @@ bool moRPL::Node::init()
         gpuIDs.push_back(devices[i]);
 
     /* Debug */
-    spdlog::info("GPUID : ");
+    spdlog::info("GPU的初始ID: ");
     for (int i = 0; i < numDevice; i++)
-        cout << gpuIDs[i];
+        cout << gpuIDs[i] << " ";
     cout << endl;
 
     return true;
