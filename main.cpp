@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     }
 
     /*初始化参数*/
-    int nRowSubspcs = 2;
+    int nRowSubspcs = 1;
     int nColSubspcs = 1;
 
     pRPL::ReadingOption readOpt = pRPL::CENTDEL_READING;
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
         if (dataManager.mpiPrc().isMaster())
             execEndTime = MPI_Wtime();
 
-        spdlog::info("执行耗时:{} s", execEndTime - execStartTime);
+        spdlog::info("执行耗时:{} ms", (execEndTime - execStartTime) * 1000);
         spdlog::info("GPU计算完成");
 
         transition.clearLyrSettings();

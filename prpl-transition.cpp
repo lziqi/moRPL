@@ -38,56 +38,59 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
 {
     // cl_device_id device_id = this->deviceID;
 
-    // cl_device_id device_id = openclManager.getDeviceID();
-    // cl_context context = openclManager.getContext();
-    // cl_command_queue commandQueue = openclManager.getCommandQueue();
-    // cl_program program = openclManager.getProgram();
-    // cl_kernel kernel = openclManager.getKernel();
-    // cl_event event;
-    // cl_int err;
-
-    cl_device_id device_id = 0;
-    cl_context context = 0;
-    cl_command_queue commandQueue = 0;
-    cl_program program = 0;
-    cl_kernel kernel = 0;
+    cl_device_id device_id = openclManager.getDeviceID();
+    cl_context context = openclManager.getContext();
+    cl_command_queue commandQueue = openclManager.getCommandQueue();
+    cl_program program = openclManager.getProgram();
+    cl_kernel kernel = openclManager.getKernel();
     cl_event event;
     cl_int err;
 
-    /* 创建上下文context */
-    context = moRPL::CreateContext(&device_id);
-    if (context == NULL)
-    {
-        spdlog::error("OpenCL: failed to create opencl context");
-        return pRPL::EvaluateReturn::EVAL_FAILED;
-    }
+    spdlog::info("ocLocal中GPU ID:");
+    cout << device_id << endl;
 
-    /* 创建队列 */
-    commandQueue = moRPL::CreateCommandQueue(context, device_id);
-    if (commandQueue == NULL)
-    {
-        moRPL::CleanUp(context, commandQueue, program, kernel, event);
-        return pRPL::EvaluateReturn::EVAL_FAILED;
-    }
+    // cl_device_id device_id = 0;
+    // cl_context context = 0;
+    // cl_command_queue commandQueue = 0;
+    // cl_program program = 0;
+    // cl_kernel kernel = 0;
+    // cl_event event;
+    // cl_int err;
 
-    string cl_path = "OpenCL/add.cl";
+    // /* 创建上下文context */
+    // context = moRPL::CreateContext(&device_id);
+    // if (context == NULL)
+    // {
+    //     spdlog::error("OpenCL: failed to create opencl context");
+    //     return pRPL::EvaluateReturn::EVAL_FAILED;
+    // }
 
-    /* 创建OpenCL程序 */
-    program = moRPL::CreateProgram(context, device_id, cl_path.c_str());
-    if (program == NULL)
-    {
-        moRPL::CleanUp(context, commandQueue, program, kernel, event);
-        return pRPL::EvaluateReturn::EVAL_FAILED;
-    }
+    // /* 创建队列 */
+    // commandQueue = moRPL::CreateCommandQueue(context, device_id);
+    // if (commandQueue == NULL)
+    // {
+    //     moRPL::CleanUp(context, commandQueue, program, kernel, event);
+    //     return pRPL::EvaluateReturn::EVAL_FAILED;
+    // }
 
-    /* 创建OpenCL内核 */
-    kernel = clCreateKernel(program, "rf_ca", NULL);
-    if (kernel == NULL)
-    {
-        spdlog::error("OpenCL: failed to create kernel");
-        moRPL::CleanUp(context, commandQueue, program, kernel, event);
-        return pRPL::EvaluateReturn::EVAL_FAILED;
-    }
+    // string cl_path = "OpenCL/add.cl";
+
+    // /* 创建OpenCL程序 */
+    // program = moRPL::CreateProgram(context, device_id, cl_path.c_str());
+    // if (program == NULL)
+    // {
+    //     moRPL::CleanUp(context, commandQueue, program, kernel, event);
+    //     return pRPL::EvaluateReturn::EVAL_FAILED;
+    // }
+
+    // /* 创建OpenCL内核 */
+    // kernel = clCreateKernel(program, "rf_ca", NULL);
+    // if (kernel == NULL)
+    // {
+    //     spdlog::error("OpenCL: failed to create kernel");
+    //     moRPL::CleanUp(context, commandQueue, program, kernel, event);
+    //     return pRPL::EvaluateReturn::EVAL_FAILED;
+    // }
 
     //左上角最小的x和最大的y，右下角最大的x与最小的y
     int minY = br.minIRow(); //西北方
