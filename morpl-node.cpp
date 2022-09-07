@@ -10,6 +10,7 @@ bool moRPL::Node::init()
 
     cl_uint numPlatform;
     cl_uint numDevice;
+    int totalDevice; //所有平台上的device总数
 
     //获取平台数
     err = clGetPlatformIDs(0, NULL, &numPlatform);
@@ -20,32 +21,34 @@ bool moRPL::Node::init()
     //初始化平台
     platforms = (cl_platform_id *)malloc(sizeof(cl_platform_id) * numPlatform);
     err = clGetPlatformIDs(numPlatform, platforms, NULL);
+    for (int i = 0; i < numPlatform; i++)
+    {
+        //获得平台上的GPU设备数量
+        err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, 0, NULL, &numDevice);
+        if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+            return false;
+        devices = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevice);
+        this->gpuCount = numDevice;
+        spdlog::info("平台{}上GPU设备数 : {}", i, numDevice);
 
-    //获得第一个平台上的GPU设备数量
-    err = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU, 0, NULL, &numDevice);
-    if (!moRPL::checkCLError(err, __FILE__, __LINE__))
-        return false;
-    devices = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevice);
-    this->gpuCount = numDevice;
-    // spdlog::info("GPU设备数 : {}", numDevice);
+        //获取GPU设备对应ID
+        err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, numDevice, devices, NULL);
+        if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+            return false;
 
-    //获取GPU设备对应ID
-    err = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU, numDevice, devices, NULL);
-    if (!moRPL::checkCLError(err, __FILE__, __LINE__))
-        return false;
-
-    for (int i = 0; i < numDevice; i++)
-        gpuIDs.push_back(devices[i]);
+        for (int i = 0; i < numDevice; i++)
+            gpuIDs.push_back(devices[i]);
+        totalDevice += numDevice;
+    }
 
     /* Debug */
     spdlog::info("GPU的初始ID: ");
-    for (int i = 0; i < numDevice; i++)
+    for (int i = 0; i < totalDevice; i++)
         cout << gpuIDs[i] << " ";
     cout << endl;
 
     spdlog::info("-----OpenCL设备初始化完成-----");
     return true;
-    // devices = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevice);
 }
 
 int moRPL::Node::getID()
