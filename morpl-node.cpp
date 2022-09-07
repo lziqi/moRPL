@@ -2,7 +2,7 @@
 
 bool moRPL::Node::init()
 {
-    spdlog::info("节点设备初始化");
+    spdlog::info("-----OpenCL设备初始化-----");
     cl_int err;
 
     cl_platform_id *platforms;
@@ -15,7 +15,7 @@ bool moRPL::Node::init()
     err = clGetPlatformIDs(0, NULL, &numPlatform);
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
         return false;
-    // spdlog::info("平台数 : {}", numPlatform);
+    spdlog::info("OpenCL平台数 : {}", numPlatform);
 
     //初始化平台
     platforms = (cl_platform_id *)malloc(sizeof(cl_platform_id) * numPlatform);
@@ -43,6 +43,7 @@ bool moRPL::Node::init()
         cout << gpuIDs[i] << " ";
     cout << endl;
 
+    spdlog::info("-----OpenCL设备初始化完成-----");
     return true;
     // devices = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevice);
 }

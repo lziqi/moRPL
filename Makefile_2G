@@ -41,9 +41,9 @@ CPPLIBS  =  -L$(GDAL_LIB)  -L$(MPI_LIB) -L$(OPENCL_LIB) -L${TIFF_LIB} -L${LOG_LI
 
 # 库文件的src cpp
 PRPL_SRC  = pgtiol-dataset.cpp\
-               pgtiol-gTiffMetaData.cpp\
+	       pgtiol-gTiffMetaData.cpp\
                pgtiol-gTiffData.cpp \
-               pgtiol-gTiffManager.cpp \
+	       pgtiol-gTiffManager.cpp \
                prpl-basicTypes.cpp \
                prpl-neighborhood.cpp  \
                prpl-cellspaceInfo.cpp \
@@ -64,7 +64,7 @@ PRPL_SRC  = pgtiol-dataset.cpp\
                morpl-Error.cpp \
                morpl-OperatorDevice.cpp \
                morpl-openclManager.cpp \
-               morpl-node.cpp \
+	       morpl-node.cpp \
                morpl-Test.cpp \
                demoTrans.cpp \
 
@@ -80,14 +80,14 @@ OBJS  =  ${SRC:.cpp=.o}
 DEPS  =  ${SRC:.cpp=.d}
 
 $(MAIN)    :   $(OBJS)
-        $(CC)    $(CPPFLAGS)   $(OBJS)   -o    $(MAIN)    $(CPPLIBS)
+	$(CC)    $(CPPFLAGS)   $(OBJS)   -o    $(MAIN)    $(CPPLIBS)
   
 include  Makefile.inc
 
 depend  :  $(SRC)  $(PRPL_H)
-        $(CC_DEP)  $(DEP)  $(CPPFLAGS) -std=c++11 $(SRC)  >  Makefile.inc
+	$(CC_DEP)  $(DEP)  $(CPPFLAGS) -std=c++11 $(SRC)  >  Makefile.inc
 
 clean  :
-        -rm  *.o
+	-rm  *.o
 clean_all  :
-        -rm  *.o  $(MAIN)
+	-rm  *.o  $(MAIN)

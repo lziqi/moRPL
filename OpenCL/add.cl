@@ -78,31 +78,36 @@ kernel void rf_ca(global unsigned char *inData, global unsigned char *outData,
   /* 循环邻域 */
   for (int y = gid_y; y < gid_y + step[1]; y++) {
     for (int x = gid_x; x < gid_x + step[0]; x++) {
-      int index = y * width + x;
-      if (x > maxX || x < minX || y > maxY || y < minY)
-        continue;
-      if (inData[index] > 1) //大于1 异常值
-        continue;
+      for (int i = 0; i < 10; i++) {
+        //元胞转换概率
+        float trans_prob = 0;
 
-      /* 对所有邻域栅格块循环 */
-      unsigned char sum = 0;
-      for (int i = 0; i < nbrSize; i++) {
-        /* 根据相对位置找到邻域栅格的绝对位置 */
-        int nbrIndex = index + nbrCoord[i * 2] + nbrCoord[i * 2 + 1] * width;
-        if (nbrIndex != index) { //不加自己所在的邻域
-          sum += inData[nbrIndex];
+        int index = y * width + x;
+        if (x > maxX || x < minX || y > maxY || y < minY)
+          continue;
+        if (inData[index] > 1) //大于1 异常值
+          continue;
+
+        /* 对所有邻域栅格块循环 */
+        unsigned char sum = 0;
+        for (int i = 0; i < nbrSize; i++) {
+          /* 根据相对位置找到邻域栅格的绝对位置 */
+          int nbrIndex = index + nbrCoord[i * 2] + nbrCoord[i * 2 + 1] * width;
+          if (nbrIndex != index) { //不加自己所在的邻域
+            sum += inData[nbrIndex];
+          }
         }
+        float averageData = sum * 1.0 / (nbrSize - 1); //邻域均值
+
+        /* 转换概率 */
+        trans_prob = averageData * (float)limitData[index] *
+                     (float)probData[index] / 100.0;
+
+        if (trans_prob > thold)
+          outData[index] = 1;
+        else
+          outData[index] = inData[index];
       }
-      float averageData = sum * 1.0 / (nbrSize - 1); //邻域均值
-
-      /* 转换概率 */
-      float trans_prob = averageData * (float)limitData[index] *
-                         (float)probData[index] / 100.0;
-
-      if (trans_prob > thold)
-        outData[index] = 1;
-      else
-        outData[index] = inData[index];
     }
   }
 }

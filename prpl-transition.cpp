@@ -12,24 +12,19 @@ pRPL::Transition::
 /*moRPL*/
 bool pRPL::Transition::initOpenCL(const char *filename, const char *kernelname, cl_device_id device_id)
 {
-    spdlog::info("InitOpenCL");
     openclManager.setDeviceID(device_id);
 
     if (!openclManager.createContext())
         return false;
-    spdlog::info("创建context成功");
 
     if (!openclManager.createCommandQueue())
         return false;
-    spdlog::info("创建commandQueue成功");
 
     if (!openclManager.createProgram(filename))
         return false;
-    spdlog::info("创建program成功");
 
     if (!openclManager.createKernel(kernelname))
         return false;
-    spdlog::info("InitOpenCL End");
 
     return true;
 }
@@ -37,6 +32,7 @@ bool pRPL::Transition::initOpenCL(const char *filename, const char *kernelname, 
 pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
 {
     // cl_device_id device_id = this->deviceID;
+    spdlog::info("-----邻域计算-----");
 
     cl_device_id device_id = openclManager.getDeviceID();
     cl_context context = openclManager.getContext();
@@ -255,7 +251,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
     }
 
     end = clock();
-    spdlog::info("写回Cellspace耗时: {} ms", (end - start) / 1000);
+    // spdlog::info("写回Cellspace耗时: {} ms", (end - start) / 1000);
 
     /* 清理内存 */
     free(res);
@@ -287,6 +283,9 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
     /* 清理GPU端 */
     if (!moRPL::CleanUp(context, commandQueue, program, kernel, event))
         return pRPL::EVAL_FAILED;
+
+    spdlog::info("-----邻域计算完成-----");
+    
     return pRPL::EVAL_SUCCEEDED;
 }
 

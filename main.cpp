@@ -19,11 +19,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    clock_t start_time, end_time;
-    start_time = clock();
-    // moRPL::testCL();
-
-    // Declare a DataManager and initialize MPI
+    // 初始化DataManager
     bool withWriter = 0;
     pRPL::DataManager dataManager;
     if (!dataManager.initMPI(MPI_COMM_WORLD, withWriter))
@@ -31,6 +27,11 @@ int main(int argc, char *argv[])
         cerr << "Error: unable to initialize MPI" << endl;
         return -1;
     }
+
+    double start_time, end_time;
+    dataManager.mpiPrc().sync();
+    if (dataManager.mpiPrc().isMaster())
+        start_time = MPI_Wtime();
 
     /*初始化参数*/
     int nRowSubspcs = 1;
@@ -136,8 +137,6 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-        spdlog::info("开始GPU计算");
-
         double execStartTime, execEndTime;
         dataManager.mpiPrc().sync();
         if (dataManager.mpiPrc().isMaster())
@@ -151,8 +150,7 @@ int main(int argc, char *argv[])
         if (dataManager.mpiPrc().isMaster())
             execEndTime = MPI_Wtime();
 
-        spdlog::info("执行耗时:{} ms", (execEndTime - execStartTime) * 1000);
-        spdlog::info("GPU计算完成");
+        spdlog::info("GPU计算耗时:{} ms", (execEndTime - execStartTime) * 1000);
 
         transition.clearLyrSettings();
     }
@@ -162,11 +160,14 @@ int main(int argc, char *argv[])
 
     // Record the end time, log computing time
     dataManager.mpiPrc().sync();
+    if (dataManager.mpiPrc().isMaster())
+    {
+        end_time = MPI_Wtime();
+        spdlog::info("程序总耗时: {} ms.", (end_time - start_time) * 1000);
+    }
 
     // Finalize MPI
     dataManager.finalizeMPI();
 
-    end_time = clock();
-    spdlog::info("Total Time: {} s.", double(end_time - start_time) / CLOCKS_PER_SEC);
     return 0;
 }
