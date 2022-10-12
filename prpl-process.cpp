@@ -380,17 +380,19 @@ bool pRPL::Process::
 
   /* 为每个node设置节点名 */
   this->node.setName(_prcrName);
-  return (done && this->node.init() && this->initOpenCL());
+  return (done && this->node.init(_deviceOption) && this->initOpenCL());
 }
 
 bool pRPL::Process::
     set(MPI_Comm &comm,
         bool hasWriter,
-        int groupID)
+        int groupID,
+        DeviceOption deviceOption)
 {
   _comm = comm;
   _hasWriter = hasWriter;
   _grpID = groupID;
+  _deviceOption = deviceOption;
   return (init());
 }
 

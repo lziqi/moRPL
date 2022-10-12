@@ -2450,9 +2450,10 @@ pRPL::DataManager::
 
 bool pRPL::DataManager::
     initMPI(MPI_Comm comm,
-            bool hasWriter)
+            bool hasWriter,
+            DeviceOption deviceOption)
 {
-    return _prc.set(comm, hasWriter);
+    return _prc.set(comm, hasWriter, -1, deviceOption);
 }
 
 void pRPL::DataManager::

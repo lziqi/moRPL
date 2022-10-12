@@ -1,6 +1,6 @@
 #include "morpl-node.h"
 
-bool moRPL::Node::init()
+bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
 {
     spdlog::info("-----OpenCL设备初始化-----");
     cl_int err;
@@ -10,7 +10,7 @@ bool moRPL::Node::init()
 
     cl_uint numPlatform;
     cl_uint numDevice;
-    int totalDevice; //所有平台上的device总数
+    int totalDevice = 0; //所有平台上的device总数
 
     //获取平台数
     err = clGetPlatformIDs(0, NULL, &numPlatform);
@@ -24,7 +24,7 @@ bool moRPL::Node::init()
     for (int i = 0; i < numPlatform; i++)
     {
         //获得平台上的GPU设备数量
-        err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, 0, NULL, &numDevice);
+        err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, 0, NULL, &numDevice);
         if (!moRPL::checkCLError(err, __FILE__, __LINE__))
             return false;
         devices = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevice);
@@ -32,13 +32,46 @@ bool moRPL::Node::init()
         spdlog::info("平台{}上GPU设备数 : {}", i, numDevice);
 
         //获取GPU设备对应ID
-        err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_GPU, numDevice, devices, NULL);
+        err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, numDevice, devices, NULL);
         if (!moRPL::checkCLError(err, __FILE__, __LINE__))
             return false;
 
-        for (int i = 0; i < numDevice; i++)
-            gpuIDs.push_back(devices[i]);
-        totalDevice += numDevice;
+        /* 获取每个设备的设备信息 */
+        vector<cl_device_type> device_types(numDevice);
+        for (int j = 0; j < numDevice; j++)
+        {
+            size_t size;
+            cl_device_type device_type;
+
+            err = clGetDeviceInfo(devices[j], CL_DEVICE_TYPE, 0, NULL, &size);
+            if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+                return false;
+
+            err = clGetDeviceInfo(devices[j], CL_DEVICE_TYPE, size, &device_type, NULL);
+            if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+                return false;
+            device_types[j] = device_type;
+        }
+
+        if (deviceOption == pRPL::DeviceOption::DEVICE_ALL)
+        {
+            for (int j = 0; j < numDevice; j++)
+            {
+                gpuIDs.push_back(devices[j]);
+                totalDevice += 1;
+            }
+        }
+        else
+        {
+            for (int j = 0; j < numDevice; j++)
+            {
+                if (deviceOption == device_types[j])
+                {
+                    gpuIDs.push_back(devices[j]);
+                    totalDevice += 1;
+                }
+            }
+        }
     }
 
     /* Debug */
@@ -47,6 +80,9 @@ bool moRPL::Node::init()
         cout << gpuIDs[i] << " ";
     cout << endl;
 
+    /* 销毁 */
+    free(platforms);
+    platforms = NULL;
     spdlog::info("-----OpenCL设备初始化完成-----");
     return true;
 }

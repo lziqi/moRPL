@@ -6,6 +6,7 @@
 #include <iostream>
 #include <CL/cl.h>
 #include "morpl-Error.h"
+#include "prpl-basicTypes.h"
 using namespace std;
 
 namespace moRPL
@@ -35,7 +36,7 @@ namespace moRPL
         bool valid();
 
         /* 初始化节点 */
-        bool init();
+        bool init(pRPL::DeviceOption deviceOption);
     };
 }
 

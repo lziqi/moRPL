@@ -17,6 +17,8 @@ namespace pRPL
   private:
     moRPL::Node node;
 
+    DeviceOption _deviceOption;
+
   public:
     moRPL::Node getNode();
     bool initOpenCL();
@@ -36,7 +38,8 @@ namespace pRPL
 
     bool set(MPI_Comm &comm,
              bool hasWriter = false,
-             int groupID = -1);
+             int groupID = -1,
+             DeviceOption deviceOption = DeviceOption::DEVICE_ALL);
     bool grouping(int nGroups,
                   bool incldMaster,
                   Process *pGrpedPrc,

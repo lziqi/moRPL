@@ -32,7 +32,8 @@ namespace pRPL
 
     /* MPI Process */
     bool initMPI(MPI_Comm comm = MPI_COMM_WORLD,
-                 bool hasWriter = false);
+                 bool hasWriter = false,
+                 DeviceOption deviceOption = DeviceOption::DEVICE_ALL);
     void finalizeMPI();
     pRPL::Process &mpiPrc();
 

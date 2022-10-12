@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     // 初始化DataManager
     bool withWriter = 0;
     pRPL::DataManager dataManager;
-    if (!dataManager.initMPI(MPI_COMM_WORLD, withWriter))
+    if (!dataManager.initMPI(MPI_COMM_WORLD, withWriter, pRPL::DeviceOption::CPU_ONLY))
     {
         cerr << "Error: unable to initialize MPI" << endl;
         return -1;

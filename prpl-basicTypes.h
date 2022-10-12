@@ -83,9 +83,16 @@ namespace pRPL
   /* OpenCL */
   struct NbrInfo
   {
-    int *nbrCoord;   //邻域的坐标属性数组
+    int *nbrCoord;  //邻域的坐标属性数组
     int nbrSize;    //邻域大小
     float *weights; //邻域的权重数组
+  };
+
+  enum DeviceOption
+  {
+    DEVICE_ALL = 0,
+    CPU_ONLY = 2,
+    GPU_ONLY = 4,
   };
 
   class CoordBR;
