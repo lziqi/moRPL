@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
         }
         dataManager.mpiPrc().sync();
 
-        pRPL::pCuf pf = &pRPL::Transition::ocLocalOperator;
+        pRPL::pCuf pf = &pRPL::Transition::ocLocalSegmentOperator;
 
         /*开始计算任务*/
         spdlog::info("初始化任务");

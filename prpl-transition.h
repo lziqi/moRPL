@@ -24,8 +24,11 @@ namespace pRPL
   public:
     bool initOpenCL(const char *filename, const char *kernelname, cl_device_id device_id);
 
-    /*局部栅格计算*/
+    /*邻域栅格计算*/
     pRPL::EvaluateReturn ocLocalOperator(const pRPL::CoordBR &br); /*oc OpenCL*/
+
+    /* 分块邻域计算 */
+    pRPL::EvaluateReturn ocLocalSegmentOperator(const pRPL::CoordBR &br);
 
   public:
     /* Constructor and destructor */

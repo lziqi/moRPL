@@ -145,3 +145,27 @@ bool moRPL::OpenCLManager::createKernel(const char *kernelname)
     }
     return true;
 }
+
+/* 设备信息 */
+bool moRPL::OpenCLManager::readGlobalSize()
+{
+    size_t size;
+    cl_int err;
+
+    clGetDeviceInfo(device_id, CL_DEVICE_GLOBAL_MEM_SIZE, 0, NULL, &size);
+    if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+        return false;
+    cl_ulong globalSize;
+
+    err = clGetDeviceInfo(device_id, CL_DEVICE_GLOBAL_MEM_SIZE, size, &globalSize, NULL);
+    if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+        return false;
+
+    this->globalSize = globalSize;
+    return true;
+}
+
+cl_ulong moRPL::OpenCLManager::getGlobalSize()
+{
+    return this->globalSize;
+}

@@ -11,6 +11,9 @@ namespace moRPL
     class OpenCLManager
     {
     private:
+        /* 设备信息 */
+        cl_ulong globalSize;
+
         cl_device_id device_id;
         cl_context context;
         cl_command_queue commandQueue;
@@ -21,6 +24,8 @@ namespace moRPL
         char *readKernel(const char *filename);
 
     public: /* get */
+        cl_ulong getGlobalSize();
+
         cl_device_id getDeviceID();
 
         cl_context getContext();
@@ -29,6 +34,17 @@ namespace moRPL
         cl_kernel getKernel();
 
     public:
+        /*
+            获取设备信息部分
+         */
+
+        /* 获取设备内存大小(对GPU则为显存) */
+        bool readGlobalSize();
+
+        /*
+            创建执行部分
+         */
+
         /* 清理OpenCL资源 */
         bool clear();
 

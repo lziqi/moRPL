@@ -242,7 +242,242 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
         return pRPL::EVAL_FAILED;
 
     spdlog::info("-----邻域计算完成-----");
-    
+
+    return pRPL::EVAL_SUCCEEDED;
+}
+
+pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordBR &br)
+{
+    // cl_device_id device_id = this->deviceID;
+    spdlog::info("-----邻域计算-----");
+
+    cl_device_id device_id = openclManager.getDeviceID();
+    cl_context context = openclManager.getContext();
+    cl_command_queue commandQueue = openclManager.getCommandQueue();
+    cl_program program = openclManager.getProgram();
+    cl_kernel kernel = openclManager.getKernel();
+    cl_event event;
+    cl_int err;
+
+    spdlog::info("ocLocal中GPU ID:");
+    cout << device_id << endl;
+
+    //左上角最小的x和最大的y，右下角最大的x与最小的y
+    int minY = br.minIRow(); //西北方
+    int maxY = br.maxIRow();
+    int minX = br.minICol(); //西北方
+    int maxX = br.maxICol();
+    int brs[4] = {minX, minY, maxX, maxY};
+
+    pRPL::Cellspace *cellspace = getCellspaceByLyrName(getPrimeLyrName());
+    int height = cellspace->info()->dims().nRows();
+    int width = cellspace->info()->dims().nCols();
+
+    NbrInfo *nbrInfo = new NbrInfo;
+    nbrInfo->nbrSize = _pNbrhd->size();
+
+    vector<pRPL::WeightedCellCoord> coords = _pNbrhd->getNbrs();
+    vector<int> nbrCoords;
+    for (int i = 0; i < _pNbrhd->size(); i++)
+    {
+        nbrCoords.push_back(coords[i].iRow());
+        nbrCoords.push_back(coords[i].iCol());
+    }
+    nbrInfo->nbrCoord = nbrCoords.data();
+
+    /* 判断是否有邻域模块 */
+    // if (minX != 0 || minY != 0 || maxX != (height - 1) || maxY != (width - 1))
+    // {
+    //     cerr << "you has defined a nrb,please use focal operator" << endl;
+    //     return pRPL::EVAL_FAILED;
+    // }
+
+    double cellWidth = cellspace->info()->georeference()->cellSize().x();
+    double cellHeight = cellspace->info()->georeference()->cellSize().y();
+
+    //输入与输出的layer数量
+    int numInLayers = _vInLyrNames.size();
+    int numOutLayers = _vOutLyrNames.size();
+
+    cl_mem *InData = new cl_mem[numInLayers];
+    cl_mem *OutData = new cl_mem[numOutLayers];
+
+    /* 计算输入输出图层所需空间 */
+    ulong totalLayerSize = 0;
+    for (int i = 0; i < numInLayers; i++)
+    {
+        cellspace = getCellspaceByLyrName(getInLyrNames()[i]);
+        int height = cellspace->info()->dims().nRows();
+        int width = cellspace->info()->dims().nCols();
+        totalLayerSize = totalLayerSize + height * width * cellspace->info()->dataSize(); //单位 字节
+    }
+    for (int i = 0; i < numOutLayers; i++)
+    {
+        cellspace = getCellspaceByLyrName(getInLyrNames()[i]);
+        int height = cellspace->info()->dims().nRows();
+        int width = cellspace->info()->dims().nCols();
+        totalLayerSize = totalLayerSize + height * width * cellspace->info()->dataSize(); //单位 字节
+    }
+
+
+    /* 输入图层数据 - 转到显存中 */
+    for (int i = 0; i < numInLayers; i++)
+    {
+        cellspace = getCellspaceByLyrName(getInLyrNames()[i]);
+        int height = cellspace->info()->dims().nRows();
+        int width = cellspace->info()->dims().nCols();
+
+        InData[i] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, width * height * cellspace->info()->dataSize(), cellspace->getData(), NULL);
+    }
+
+    /* 输出图层数据 */
+    for (int i = 0; i < numOutLayers; i++)
+    {
+        cellspace = getCellspaceByLyrName(getOutLyrNames()[i]);
+
+        OutData[i] = clCreateBuffer(context, CL_MEM_READ_WRITE, width * height * cellspace->info()->dataSize(), NULL, NULL);
+    }
+
+    /* 邻域数据 */
+    cl_mem clNbrCoords = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(int) * nbrInfo->nbrSize * 2, (void *)nbrInfo->nbrCoord, NULL);
+    cl_mem clNbrSize = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(int), &(nbrInfo->nbrSize), NULL);
+
+    /* tif长宽数据 */
+    cl_mem clWidth = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(int), &width, NULL);
+    cl_mem clHeight = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(int), &height, NULL);
+    cl_mem clBR = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(int) * 4, brs, NULL);
+
+    /* 设置WorkSize与Step */
+    cl_uint maxDimension;
+    err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), &maxDimension, NULL);
+    if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+    {
+        spdlog::error("OpenCL: failed to get max work size");
+        moRPL::CleanUp(context, commandQueue, program, kernel, event);
+        return pRPL::EvaluateReturn::EVAL_FAILED;
+    }
+
+    size_t maxWorkSize[maxDimension];
+    err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t) * maxDimension, maxWorkSize, NULL);
+
+    if (width < maxWorkSize[0])
+        maxWorkSize[0] = width;
+    if (height < maxWorkSize[1])
+        maxWorkSize[1] = height;
+
+    int step[2];
+    step[0] = (width != maxWorkSize[0]) ? (width / maxWorkSize[0] + 1) : 1;
+    step[1] = (height != maxWorkSize[1]) ? (height / maxWorkSize[1] + 1) : 1;
+    cl_mem clStep = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(int) * 2, &step, NULL);
+
+    /* thold */
+    float thold = 0.06;
+    cl_mem clThold = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float), &thold, NULL);
+
+    /* 设置内核参数 */
+    /* 先用一个图层来测试 */
+    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &InData[0]);
+    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &OutData[0]);
+    err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &clWidth);
+    err |= clSetKernelArg(kernel, 3, sizeof(cl_mem), &clHeight);
+    err |= clSetKernelArg(kernel, 4, sizeof(cl_mem), &clBR);
+    err |= clSetKernelArg(kernel, 5, sizeof(cl_mem), &clStep);
+    err |= clSetKernelArg(kernel, 6, sizeof(cl_mem), &clNbrCoords);
+    err |= clSetKernelArg(kernel, 7, sizeof(cl_mem), &clNbrSize);
+    err |= clSetKernelArg(kernel, 8, sizeof(int) * nbrInfo->nbrSize * 2, NULL);
+    err |= clSetKernelArg(kernel, 9, sizeof(cl_mem), &InData[1]);  // limit layer
+    err |= clSetKernelArg(kernel, 10, sizeof(cl_mem), &InData[2]); // prob layer
+    err |= clSetKernelArg(kernel, 11, sizeof(cl_mem), &clThold);   // thold
+
+    if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+    {
+        spdlog::error("OpenCL: failed to set kernel arg");
+        moRPL::CleanUp(context, commandQueue, program, kernel, event);
+        return pRPL::EvaluateReturn::EVAL_FAILED;
+    }
+
+    spdlog::info("OpenCL参数信息 : maxWorkSize {} {} , step {} {}", maxWorkSize[0], maxWorkSize[1], step[0], step[1]);
+    size_t globalWorkSize[2] = {maxWorkSize[0], maxWorkSize[1]};
+    size_t localWorkSize[2] = {1, 1};
+
+    err = clEnqueueNDRangeKernel(commandQueue, kernel, 2, NULL, globalWorkSize, NULL, 0, NULL, &event); //&event
+    clWaitForEvents(1, &event);
+    err = clFinish(commandQueue); //堵塞到命令队列中所有命令执行完毕
+
+    cl_ulong startTime = 0, endTime = 0;
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START,
+                            sizeof(cl_ulong), &startTime, NULL);
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END,
+                            sizeof(cl_ulong), &endTime, NULL);
+
+    cl_ulong kernelExecTimeNs = endTime - startTime;
+
+    /* 执行时间 */
+    spdlog::info("Kernel耗时 : {} ms", kernelExecTimeNs * 1e-6);
+    if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+    {
+        spdlog::error("OpenCL: failed to exec kernel");
+        moRPL::CleanUp(context, commandQueue, program, kernel, event);
+        return pRPL::EvaluateReturn::EVAL_FAILED;
+    }
+
+    /* 计算结果拷贝回内存 */
+    void *res = malloc(width * height * cellspace->info()->dataSize());
+
+    err = clEnqueueReadBuffer(commandQueue, OutData[0], CL_TRUE, 0, width * height * cellspace->info()->dataSize(), res, 0, NULL, NULL);
+    if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+    {
+        spdlog::error("OpenCL: failed to gpu to mem");
+        moRPL::CleanUp(context, commandQueue, program, kernel, event);
+        return pRPL::EvaluateReturn::EVAL_FAILED;
+    }
+
+    clock_t start, end;
+    start = clock();
+
+    for (int i = 0; i < numOutLayers; i++)
+    {
+        cellspace = getCellspaceByLyrName(getOutLyrNames()[i]);
+        cellspace->updateData(res, cellspace->info()->dataSize() * width * height);
+        cellspace->updateCellspaceAs(br, res);
+    }
+
+    end = clock();
+    // spdlog::info("写回Cellspace耗时: {} ms", (end - start) / 1000);
+
+    /* 清理内存 */
+    free(res);
+    delete nbrInfo;
+
+    /* 清理cl_mem */
+    if (!moRPL::checkCLError(clReleaseMemObject(InData[0]), __FILE__, __LINE__))
+        return pRPL::EVAL_FAILED;
+    if (!moRPL::checkCLError(clReleaseMemObject(InData[1]), __FILE__, __LINE__))
+        return pRPL::EVAL_FAILED;
+    if (!moRPL::checkCLError(clReleaseMemObject(InData[2]), __FILE__, __LINE__))
+        return pRPL::EVAL_FAILED;
+    if (!moRPL::checkCLError(clReleaseMemObject(clThold), __FILE__, __LINE__))
+        return pRPL::EVAL_FAILED;
+    if (!moRPL::checkCLError(clReleaseMemObject(OutData[0]), __FILE__, __LINE__))
+        return pRPL::EVAL_FAILED;
+    if (!moRPL::checkCLError(clReleaseMemObject(clWidth), __FILE__, __LINE__))
+        return pRPL::EVAL_FAILED;
+    if (!moRPL::checkCLError(clReleaseMemObject(clHeight), __FILE__, __LINE__))
+        return pRPL::EVAL_FAILED;
+    if (!moRPL::checkCLError(clReleaseMemObject(clBR), __FILE__, __LINE__))
+        return pRPL::EVAL_FAILED;
+    if (!moRPL::checkCLError(clReleaseMemObject(clStep), __FILE__, __LINE__))
+        return pRPL::EVAL_FAILED;
+    if (!moRPL::checkCLError(clReleaseMemObject(clNbrCoords), __FILE__, __LINE__))
+        return pRPL::EVAL_FAILED;
+    if (!moRPL::checkCLError(clReleaseMemObject(clNbrSize), __FILE__, __LINE__))
+        return pRPL::EVAL_FAILED;
+    /* 清理GPU端 */
+    if (!moRPL::CleanUp(context, commandQueue, program, kernel, event))
+        return pRPL::EVAL_FAILED;
+
+    spdlog::info("-----邻域计算完成-----");
+
     return pRPL::EVAL_SUCCEEDED;
 }
 
