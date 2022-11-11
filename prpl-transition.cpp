@@ -319,15 +319,24 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
         totalLayerSize = totalLayerSize + height * width * cellspace->info()->dataSize(); //单位 字节
     }
 
+    if (!openclManager.readGlobalSize())
+    {
+        return pRPL::EvaluateReturn::EVAL_FAILED;
+    }
+    ulong memorySize = openclManager.getGlobalSize();
+
+    int segmentNum = memorySize / memorySize;
 
     /* 输入图层数据 - 转到显存中 */
+    /* 预分配缓存 */
     for (int i = 0; i < numInLayers; i++)
     {
         cellspace = getCellspaceByLyrName(getInLyrNames()[i]);
-        int height = cellspace->info()->dims().nRows();
-        int width = cellspace->info()->dims().nCols();
 
-        InData[i] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, width * height * cellspace->info()->dataSize(), cellspace->getData(), NULL);
+        InData[i] = clCreateBuffer(context, CL_MEM_READ_ONLY, width * height * cellspace->info()->dataSize(), NULL, &err);
+        if (InData[i] == NULL)
+            return pRPL::EvaluateReturn::EVAL_FAILED;
+        // InData[i] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, width * height * cellspace->info()->dataSize(), cellspace->getData(), NULL);
     }
 
     /* 输出图层数据 */
@@ -335,7 +344,9 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     {
         cellspace = getCellspaceByLyrName(getOutLyrNames()[i]);
 
-        OutData[i] = clCreateBuffer(context, CL_MEM_READ_WRITE, width * height * cellspace->info()->dataSize(), NULL, NULL);
+        OutData[i] = clCreateBuffer(context, CL_MEM_READ_WRITE, width * height * cellspace->info()->dataSize(), NULL, &err);
+        if (OutData[i] == NULL)
+            return pRPL::EvaluateReturn::EVAL_FAILED;
     }
 
     /* 邻域数据 */
@@ -399,6 +410,34 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     spdlog::info("OpenCL参数信息 : maxWorkSize {} {} , step {} {}", maxWorkSize[0], maxWorkSize[1], step[0], step[1]);
     size_t globalWorkSize[2] = {maxWorkSize[0], maxWorkSize[1]};
     size_t localWorkSize[2] = {1, 1};
+
+    /* 向缓存写入数据 */
+    for (int i = 0; i < numInLayers; i++)
+    {
+        cellspace = getCellspaceByLyrName(getInLyrNames()[i]);
+
+        err = clEnqueueWriteBuffer(commandQueue, InData[i], CL_TRUE, 0, height * width * cellspace->info()->dataSize(), cellspace->getData(), 0, NULL, NULL);
+
+        if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+        {
+            spdlog::error("OpenCL: failed to write buffer");
+            moRPL::CleanUp(context, commandQueue, program, kernel, event);
+            return pRPL::EvaluateReturn::EVAL_FAILED;
+        }
+    }
+    for (int i = 0; i < numOutLayers; i++)
+    {
+        cellspace = getCellspaceByLyrName(getOutLyrNames()[i]);
+
+        err = clEnqueueWriteBuffer(commandQueue, OutData[i], CL_TRUE, 0, height * width * cellspace->info()->dataSize(), cellspace->getData(), 0, NULL, NULL);
+
+        if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+        {
+            spdlog::error("OpenCL: failed to write buffer");
+            moRPL::CleanUp(context, commandQueue, program, kernel, event);
+            return pRPL::EvaluateReturn::EVAL_FAILED;
+        }
+    }
 
     err = clEnqueueNDRangeKernel(commandQueue, kernel, 2, NULL, globalWorkSize, NULL, 0, NULL, &event); //&event
     clWaitForEvents(1, &event);
