@@ -309,6 +309,8 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
         cellspace = getCellspaceByLyrName(getInLyrNames()[i]);
         int height = cellspace->info()->dims().nRows();
         int width = cellspace->info()->dims().nCols();
+
+        spdlog::info("输入图层{} , {} {}", i, width, height);
         totalLayerSize = totalLayerSize + height * width * cellspace->info()->dataSize(); //单位 字节
     }
     for (int i = 0; i < numOutLayers; i++)

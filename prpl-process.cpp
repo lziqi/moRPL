@@ -51,6 +51,21 @@ bool pRPL::Process::initOpenCL()
           it->second.push_back(i);
       }
 
+      /* Debug */
+      for (auto &i : nodeCpu)
+      {
+        spdlog::info("节点名 {}", i.first);
+        for (int j = 0; j < i.second.size(); j++)
+          cout << i.second[j] << endl;
+      }
+
+      for (auto &i : processGPU)
+      {
+        spdlog::info("进程id {}", i.first);
+        for (int j = 0; j < i.second.size(); j++)
+          cout << i.second[j] << endl;
+      }
+
       /* 向每个进程分配GPU */
       for (auto &i : processGPU)
       {
