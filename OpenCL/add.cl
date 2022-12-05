@@ -78,7 +78,7 @@ kernel void rf_ca(global unsigned char *inData, global unsigned char *outData,
   /* 循环邻域 */
   for (int y = gid_y; y < gid_y + step[1]; y++) {
     for (int x = gid_x; x < gid_x + step[0]; x++) {
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 1; i++) {
         //元胞转换概率
         float trans_prob = 0;
 

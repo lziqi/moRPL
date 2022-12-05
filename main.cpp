@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     // 初始化DataManager
     bool withWriter = 0;
     pRPL::DataManager dataManager;
-    if (!dataManager.initMPI(MPI_COMM_WORLD, withWriter, pRPL::DeviceOption::CPU_ONLY))
+    if (!dataManager.initMPI(MPI_COMM_WORLD, withWriter, pRPL::DeviceOption::GPU_ONLY))
     {
         cerr << "Error: unable to initialize MPI" << endl;
         return -1;
@@ -34,16 +34,16 @@ int main(int argc, char *argv[])
         start_time = MPI_Wtime();
 
     /*初始化参数*/
-    int nRowSubspcs = 4;
+    int nRowSubspcs = 2;
     int nColSubspcs = 1;
 
     pRPL::ReadingOption readOpt = pRPL::CENTDEL_READING;
     pRPL::WritingOption writeOpt = pRPL::CENTDEL_WRITING; // pRPL::CENTDEL_WRITING
 
     /*加入输入图层*/
-    pRPL::Layer *inLayer = dataManager.addLayerByGDAL("inputLayer", "./data/rf-ca/dg2001_resample.tif", 1, true);
-    pRPL::Layer *limitLayer = dataManager.addLayerByGDAL("limitLayer", "./data/rf-ca/river2001_resample.tif", 1, true);
-    pRPL::Layer *probLayer = dataManager.addLayerByGDAL("probLayer", "./data/rf-ca/prob_resample.tif", 1, true);
+    pRPL::Layer *inLayer = dataManager.addLayerByGDAL("inputLayer", "./data/rf-ca/dg2001.tif", 1, true); //./data/resample/dg2001_1.tif
+    pRPL::Layer *limitLayer = dataManager.addLayerByGDAL("limitLayer", "./data/rf-ca/river2001.tif", 1, true);
+    pRPL::Layer *probLayer = dataManager.addLayerByGDAL("probLayer", "./data/rf-ca/prob.tif", 1, true);
 
     const pRPL::SpaceDims &spaceDim = *(inLayer->glbDims());
     const pRPL::CellspaceGeoinfo *cellspaceGeoInfo = inLayer->glbGeoinfo();
@@ -61,11 +61,13 @@ int main(int argc, char *argv[])
     // pRPL::Transition transition;
     DemoTransition transition;
     transition.setNbrhdByName(neighborhood3x3->name());
-    // transition.addInputLyr(inLayer->name(), false);
+    transition.addInputLyr(inLayer->name(), false);
+    transition.addInputLyr(limitLayer->name(), false);
+    transition.addInputLyr(probLayer->name(), false);
 
     /*创建输出图层*/
     string outLayerName;
-    outLayerName.assign("./data/rf-ca/OpenCL_" + to_string(dataManager.mpiPrc().nProcesses()) + ".tif");
+    outLayerName.assign("./output/OpenCL_" + to_string(dataManager.mpiPrc().nProcesses()) + ".tif");
     for (int i = 0; i < 1; i++)
     {
         if (i % 2 == 0)
@@ -115,7 +117,7 @@ int main(int argc, char *argv[])
         }
         dataManager.mpiPrc().sync();
 
-        pRPL::pCuf pf = &pRPL::Transition::ocLocalSegmentOperator;
+        pRPL::pCuf pf = &pRPL::Transition::ocLocalOperator;//ocLocalSegmentOperator;
 
         /*开始计算任务*/
         spdlog::info("初始化任务");
@@ -123,6 +125,12 @@ int main(int argc, char *argv[])
         {
             return -1;
         }
+
+        // int subspcs2Map = 2 * (dataManager.mpiPrc().nProcesses() - 1);
+        // if (!dataManager.initTaskFarm(transition, pRPL::CYLC_MAP, subspcs2Map, readOpt))
+        // {
+        //     return -1;
+        // }
 
         dataManager.mpiPrc().sync();
 
@@ -146,6 +154,11 @@ int main(int argc, char *argv[])
         {
             return -1;
         }
+        // if (dataManager.evaluate_TF(pRPL::EVAL_ALL, transition, readOpt, writeOpt, false, pf) != pRPL::EVAL_SUCCEEDED)
+        // {
+        //     return -1;
+        // }
+
         dataManager.mpiPrc().sync();
         if (dataManager.mpiPrc().isMaster())
             execEndTime = MPI_Wtime();

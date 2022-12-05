@@ -91,6 +91,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
         cellspace = getCellspaceByLyrName(getInLyrNames()[i]);
         int height = cellspace->info()->dims().nRows();
         int width = cellspace->info()->dims().nCols();
+        spdlog::info("输入图层{} , {} {}", i, width, height);
 
         InData[i] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, width * height * cellspace->info()->dataSize(), cellspace->getData(), NULL);
     }
@@ -99,6 +100,9 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
     for (int i = 0; i < numOutLayers; i++)
     {
         cellspace = getCellspaceByLyrName(getOutLyrNames()[i]);
+        int height = cellspace->info()->dims().nRows();
+        int width = cellspace->info()->dims().nCols();
+        spdlog::info("输出图层{} , {} {}", i, width, height);
 
         OutData[i] = clCreateBuffer(context, CL_MEM_READ_WRITE, width * height * cellspace->info()->dataSize(), NULL, NULL);
     }
@@ -262,6 +266,12 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     spdlog::info("ocLocal中GPU ID:");
     cout << device_id << endl;
 
+    if (!openclManager.readGlobalSize())
+    {
+        return pRPL::EvaluateReturn::EVAL_FAILED;
+    }
+    spdlog::info("ocLocal中设备的内存大小:{}", openclManager.getGlobalSize());
+
     //左上角最小的x和最大的y，右下角最大的x与最小的y
     int minY = br.minIRow(); //西北方
     int maxY = br.maxIRow();
@@ -310,7 +320,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
         int height = cellspace->info()->dims().nRows();
         int width = cellspace->info()->dims().nCols();
 
-        spdlog::info("输入图层{} , {} {}", i, width, height);
+        // spdlog::info("输入图层{} , {} {}", i, width, height);
         totalLayerSize = totalLayerSize + height * width * cellspace->info()->dataSize(); //单位 字节
     }
     for (int i = 0; i < numOutLayers; i++)
@@ -318,13 +328,10 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
         cellspace = getCellspaceByLyrName(getInLyrNames()[i]);
         int height = cellspace->info()->dims().nRows();
         int width = cellspace->info()->dims().nCols();
+        // spdlog::info("输出图层{} , {} {}", i, width, height);
         totalLayerSize = totalLayerSize + height * width * cellspace->info()->dataSize(); //单位 字节
     }
 
-    if (!openclManager.readGlobalSize())
-    {
-        return pRPL::EvaluateReturn::EVAL_FAILED;
-    }
     ulong memorySize = openclManager.getGlobalSize();
 
     int segmentNum = memorySize / memorySize;
@@ -334,7 +341,10 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     for (int i = 0; i < numInLayers; i++)
     {
         cellspace = getCellspaceByLyrName(getInLyrNames()[i]);
+        int height = cellspace->info()->dims().nRows();
+        int width = cellspace->info()->dims().nCols();
 
+        spdlog::info("输入图层{} , {} {}", i, width, height);
         InData[i] = clCreateBuffer(context, CL_MEM_READ_ONLY, width * height * cellspace->info()->dataSize(), NULL, &err);
         if (InData[i] == NULL)
             return pRPL::EvaluateReturn::EVAL_FAILED;
@@ -345,6 +355,8 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     for (int i = 0; i < numOutLayers; i++)
     {
         cellspace = getCellspaceByLyrName(getOutLyrNames()[i]);
+        int height = cellspace->info()->dims().nRows();
+        int width = cellspace->info()->dims().nCols();
 
         OutData[i] = clCreateBuffer(context, CL_MEM_READ_WRITE, width * height * cellspace->info()->dataSize(), NULL, &err);
         if (OutData[i] == NULL)
@@ -360,6 +372,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     cl_mem clHeight = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(int), &height, NULL);
     cl_mem clBR = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(int) * 4, brs, NULL);
 
+    spdlog::info("设置worksize、step");
     /* 设置WorkSize与Step */
     cl_uint maxDimension;
     err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), &maxDimension, NULL);
@@ -824,6 +837,7 @@ bool pRPL::Transition::
 pRPL::EvaluateReturn pRPL::Transition::
     evalBR(const pRPL::CoordBR &br, bool GPUCompute, pRPL::pCuf pf)
 {
+    spdlog::info("evalBR");
     pRPL::Cellspace *pPrmSpc = getCellspaceByLyrName(getPrimeLyrName());
 
     if (pPrmSpc == NULL)

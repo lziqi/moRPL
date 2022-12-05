@@ -17,5 +17,9 @@ protected:
     float _scale;
 
     pRPL::Cellspace *_inputLayer;
+    pRPL::Cellspace *_inLayer;
+    pRPL::Cellspace *_limitLayer;
+    pRPL::Cellspace *_probLayer;
+
     pRPL::Cellspace *_outputLayer;
 };

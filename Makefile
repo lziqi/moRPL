@@ -58,7 +58,6 @@ PRPL_SRC  = pgtiol-dataset.cpp\
                prpl-process.cpp \
                prpl-transferInfo.cpp \
                prpl-dataManager.cpp  \
-               aspectTrans.cpp \
                morpl-Error.cpp \
                morpl-OperatorDevice.cpp \
                morpl-openclManager.cpp \
@@ -66,6 +65,7 @@ PRPL_SRC  = pgtiol-dataset.cpp\
                morpl-Test.cpp \
                demoTrans.cpp \
 
+#                aspectTrans.cpp 
 MAIN_SRC  =  main.cpp  # pAspect.cpp
 
 # 所有的cpp

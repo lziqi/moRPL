@@ -29,6 +29,8 @@ bool DemoTransition::check() const
 bool DemoTransition::afterSetCellspaces(int subCellspcGlbIdx)
 {
     _inputLayer = getCellspaceByLyrName(_vInLyrNames[0]);
+    _limitLayer = getCellspaceByLyrName("limitLayer");
+    _probLayer = getCellspaceByLyrName("probLayer");
     // cout << _inputLayer->info()->size() << endl;
 
     _outputLayer = getCellspaceByLyrName(_vOutLyrNames[0]);
@@ -48,22 +50,36 @@ pRPL::EvaluateReturn DemoTransition::
 
     /* 输出图层数据 */
     unsigned char _data = _inputLayer->atAs<unsigned char>(coord, true);
+    unsigned char _limit = _limitLayer->atAs<unsigned char>(coord, true);
+    unsigned char _prob = _probLayer->atAs<unsigned char>(coord, true);
 
-    int test[18] = {0, 0, -1, -1, -1, 0, -1, 1, 0,
+    int test[16] = {-1, -1, -1, 0, -1, 1, 0,
                     -1, 0, 1, 1, -1, 1, 0, 1, 1};
 
+    if (_data > 1)
+        return pRPL::EVAL_SUCCEEDED;
+
     unsigned char sum = 0;
-    for (int i = 0; i < 9; i++)
+    for (int i = 0; i < 8; i++) //不加自己所在的邻域
     {
         int row = coord.iRow() + test[i * 2];
         int col = coord.iCol() + test[i * 2 + 1];
         pRPL::CellCoord nbrCoord(row, col);
 
-        if (_inputLayer->atAs<unsigned char>(nbrCoord, true) != 0)
-            sum += _inputLayer->atAs<unsigned char>(nbrCoord, true);
+        // if (_inputLayer->atAs<unsigned char>(nbrCoord, true) != 0)
+        sum += _inputLayer->atAs<unsigned char>(nbrCoord, true);
     }
 
-    if (!_outputLayer->updateCellAs<unsigned char>(coord, sum, true))
+    float averageData = sum * 1.0 / 8;
+    float trans_prob = averageData * (float)_limit * float(_prob) / 100.0;
+
+    float res = 0;
+    if(trans_prob > 0.06)
+        res = 1;
+    else
+        res = _data;
+
+    if (!_outputLayer->updateCellAs<unsigned char>(coord, res, true))
     {
         return pRPL::EVAL_FAILED;
     }

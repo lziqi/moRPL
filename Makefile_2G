@@ -64,7 +64,7 @@ PRPL_SRC  = pgtiol-dataset.cpp\
                morpl-Error.cpp \
                morpl-OperatorDevice.cpp \
                morpl-openclManager.cpp \
-	       morpl-node.cpp \
+	           morpl-node.cpp \
                morpl-Test.cpp \
                demoTrans.cpp \
 

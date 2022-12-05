@@ -24,6 +24,7 @@ bool pRPL::Process::initOpenCL()
       processNode[_id] = _prcrName;
       processGPU[_id] = node.getGPUIDs();
 
+      spdlog::info("nTotalPrcs {}",_nTotalPrcs);
       /* 生成节点 --- CPU、GPU对应表 */
       for (int i = 1; i < _nTotalPrcs; i++)
       {
@@ -32,9 +33,12 @@ bool pRPL::Process::initOpenCL()
         int gpuCount;
 
         MPI_Recv(_name, 100, MPI_CHAR, i, i, _comm, &status);
+        spdlog::info("接收name完成");
         MPI_Recv(&gpuCount, 1, MPI_INT, i, 2 * i, _comm, &status);
+        spdlog::info("接收gpuCount完成");
         vector<cl_device_id> gpuIDs(gpuCount);
         MPI_Recv(&gpuIDs[0], gpuCount, MPI_DOUBLE, i, 3 * i, _comm, &status);
+        spdlog::info("接收gpuIds完成");
 
         processNode[i] = _name;
         processGPU[i] = gpuIDs;

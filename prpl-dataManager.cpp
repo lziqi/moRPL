@@ -947,7 +947,7 @@ pRPL::EvaluateReturn pRPL::DataManager::
              pRPL::EvaluateBR br2Eval,
              bool ifInitNoData)
 {
-
+    spdlog::info("evalALL");
     if (br2Eval != pRPL::EVAL_WORKBR)
     {
         if (subspcGlbID == pRPL::ERROR_ID)
@@ -1034,20 +1034,7 @@ pRPL::EvaluateReturn pRPL::DataManager::
             workBR = ((pRPL::SubCellspace *)pPrmCellspace)->subInfo()->workBR();
         }
 
-        /* 统计evalBR执行时间 */
-        double evalBRStartTime, evalBREndTime;
-        this->mpiPrc().sync();
-        if (this->mpiPrc().isMaster())
-            evalBRStartTime = MPI_Wtime();
-
         done = trans.evalBR(workBR, GPUCompute, pf);
-
-        this->mpiPrc().sync();
-        if (this->mpiPrc().isMaster())
-        {
-            evalBREndTime = MPI_Wtime();
-            // cout << "evalBR执行耗时: " << evalBREndTime - evalBRStartTime << "s." << endl;
-        }
 
         break;
     case pRPL::EVAL_EDGES:

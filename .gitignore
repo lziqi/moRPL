@@ -1,4 +1,6 @@
 data
+output
+build
 
 # Compiled Object files
 *.slo

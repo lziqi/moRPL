@@ -51,26 +51,40 @@ bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
             if (!moRPL::checkCLError(err, __FILE__, __LINE__))
                 return false;
             device_types[j] = device_type;
+
+            cl_ulong globalSize;
+            clGetDeviceInfo(devices[j], CL_DEVICE_GLOBAL_MEM_SIZE, 0, NULL, &size);
+            if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+                return false;
+
+            err = clGetDeviceInfo(devices[j], CL_DEVICE_GLOBAL_MEM_SIZE, size, &globalSize, NULL);
+            if (!moRPL::checkCLError(err, __FILE__, __LINE__))
+                return false;
+            spdlog::info("设备{}的内存 :{}", j, globalSize);
+            // cout << globalSize << endl;
         }
 
-        if (deviceOption == pRPL::DeviceOption::DEVICE_ALL)
-        {
-            for (int j = 0; j < numDevice; j++)
-            {
-                gpuIDs.push_back(devices[j]);
-                totalDevice += 1;
-            }
-        }
-        else
-        {
-            for (int j = 0; j < numDevice; j++)
-            {
-                if (deviceOption == device_types[j])
-                {
-                    gpuIDs.push_back(devices[j]);
-                    totalDevice += 1;
-                }
-            }
+        // if (deviceOption == pRPL::DeviceOption::DEVICE_ALL)
+        // {
+        //     for (int j = 0; j < numDevice; j++)
+        //     {
+        //         gpuIDs.push_back(devices[j]);
+        //         totalDevice += 1;
+        //     }
+        // }
+        // else
+        // {
+        //     for (int j = 0; j < numDevice; j++)
+        //     {
+        //         if (deviceOption == device_types[j])
+        //         {
+        //             gpuIDs.push_back(devices[j]);
+        //             totalDevice += 1;
+        //         }
+        //     }
+        // }
+        if(i == 1){
+            gpuIDs.push_back(devices[0]);
         }
     }
 
