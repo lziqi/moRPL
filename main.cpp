@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
         start_time = MPI_Wtime();
 
     /*初始化参数*/
-    int nRowSubspcs = 2;
+    int nRowSubspcs = 1;
     int nColSubspcs = 1;
 
     pRPL::ReadingOption readOpt = pRPL::CENTDEL_READING;

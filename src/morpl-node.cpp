@@ -64,27 +64,24 @@ bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
             // cout << globalSize << endl;
         }
 
-        // if (deviceOption == pRPL::DeviceOption::DEVICE_ALL)
-        // {
-        //     for (int j = 0; j < numDevice; j++)
-        //     {
-        //         gpuIDs.push_back(devices[j]);
-        //         totalDevice += 1;
-        //     }
-        // }
-        // else
-        // {
-        //     for (int j = 0; j < numDevice; j++)
-        //     {
-        //         if (deviceOption == device_types[j])
-        //         {
-        //             gpuIDs.push_back(devices[j]);
-        //             totalDevice += 1;
-        //         }
-        //     }
-        // }
-        if(i == 1){
-            gpuIDs.push_back(devices[0]);
+        if (deviceOption == pRPL::DeviceOption::DEVICE_ALL)
+        {
+            for (int j = 0; j < numDevice; j++)
+            {
+                gpuIDs.push_back(devices[j]);
+                totalDevice += 1;
+            }
+        }
+        else
+        {
+            for (int j = 0; j < numDevice; j++)
+            {
+                if (deviceOption == device_types[j])
+                {
+                    gpuIDs.push_back(devices[j]);
+                    totalDevice += 1;
+                }
+            }
         }
     }
 
