@@ -24,7 +24,7 @@ find_package(MPI REQUIRED)
 
 # opencl
 find_library(OPENCL_LIB OpenCL HINTS /usr/lib/x86_64-linux-gnu)
-
+# find_library(OPENCL_LIB OpenCL HINTS /BIGDATA1/app_GPU/CUDA/8.0/lib64)
 
 include_directories(include)
 
