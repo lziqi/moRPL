@@ -10,21 +10,21 @@ bool pRPL::Process::initOpenCL()
 {
   MPI_Status status;
 
-  if (!this->node.valid() && !isMaster()) //非主节点且没有GPU
+  if (!this->node.valid() && !isMaster()) // 非主节点且没有GPU
     return false;
   else
   {
-    if (this->isMaster()) //主进程
+    if (this->isMaster()) // 主进程
     {
-      map<string, vector<int>> nodeCpu;          //节点对应CPU
-      map<int, string> processNode;              //进程对应节点名
-      map<int, vector<cl_device_id>> processGPU; //进程对应GPU
+      map<string, vector<int>> nodeCpu;          // 节点对应CPU
+      map<int, string> processNode;              // 进程对应节点名
+      map<int, vector<cl_device_id>> processGPU; // 进程对应GPU
 
       nodeCpu[_prcrName] = vector<int>(1, 0);
       processNode[_id] = _prcrName;
       processGPU[_id] = node.getGPUIDs();
 
-      spdlog::info("nTotalPrcs {}",_nTotalPrcs);
+      spdlog::info("nTotalPrcs {}", _nTotalPrcs);
       /* 生成节点 --- CPU、GPU对应表 */
       for (int i = 1; i < _nTotalPrcs; i++)
       {
@@ -56,19 +56,19 @@ bool pRPL::Process::initOpenCL()
       }
 
       /* Debug */
-      for (auto &i : nodeCpu)
-      {
-        spdlog::info("节点名 {}", i.first);
-        for (int j = 0; j < i.second.size(); j++)
-          cout << i.second[j] << endl;
-      }
+      // for (auto &i : nodeCpu)
+      // {
+      //   spdlog::info("节点名 {}", i.first);
+      //   for (int j = 0; j < i.second.size(); j++)
+      //     cout << i.second[j] << endl;
+      // }
 
-      for (auto &i : processGPU)
-      {
-        spdlog::info("进程id {}", i.first);
-        for (int j = 0; j < i.second.size(); j++)
-          cout << i.second[j] << endl;
-      }
+      // for (auto &i : processGPU)
+      // {
+      //   spdlog::info("进程id {}", i.first);
+      //   for (int j = 0; j < i.second.size(); j++)
+      //     cout << i.second[j] << endl;
+      // }
 
       /* 向每个进程分配GPU */
       for (auto &i : processGPU)
@@ -83,11 +83,11 @@ bool pRPL::Process::initOpenCL()
 
         cl_device_id gpuID = gpuIDs[(processID - processBegin) % gpuNum];
 
-        if (processID == 0) //主进程
+        if (processID == 0) // 主进程
         {
           node.setGPUID(gpuID);
         }
-        else //其他进程
+        else // 其他进程
         {
           MPI_Send(&gpuID, 1, MPI_DOUBLE, processID, 4 * processID, _comm);
         }
@@ -113,7 +113,7 @@ bool pRPL::Process::initOpenCL()
       //   }
       // }
     }
-    else //非主进程
+    else // 非主进程
     {
       /* 发送节点名 */
       const char *name = _prcrName.c_str();
@@ -140,14 +140,14 @@ bool pRPL::Process::initOpenCL()
 bool pRPL::Process::initOpenCL_Old()
 {
   MPI_Status status;
-  if (!this->node.valid() && !isMaster()) //非主节点且没有GPU
+  if (!this->node.valid() && !isMaster()) // 非主节点且没有GPU
     return false;
   else
   {
     if (this->isMaster())
-    {                                            //主节点
-      map<string, vector<int>> nodeCpu;          //节点对应CPU
-      map<string, vector<cl_device_id>> nodeGpu; //节点对应GPU
+    {                                            // 主节点
+      map<string, vector<int>> nodeCpu;          // 节点对应CPU
+      map<string, vector<cl_device_id>> nodeGpu; // 节点对应GPU
 
       map<string, vector<int>>::iterator it;
 
@@ -197,7 +197,7 @@ bool pRPL::Process::initOpenCL_Old()
       for (auto &i : nodeCpu)
       {
         auto j = nodeGpu.begin();
-        vector<int> cpus = i.second; //当前节点对应的CPU进程ID
+        vector<int> cpus = i.second; // 当前节点对应的CPU进程ID
         vector<cl_device_id> gpus = j->second;
 
         for (int k = 0; k < cpus.size(); k++)
@@ -207,7 +207,7 @@ bool pRPL::Process::initOpenCL_Old()
           {
             MPI_Send(&gpus[gpuIndex], 1, MPI_DOUBLE, cpus[k], 4 * cpus[k], _comm);
           }
-          else //主进程
+          else // 主进程
           {
             node.setGPUID(gpus[gpuIndex]);
             spdlog::info("主进程GPUID : ");
@@ -219,7 +219,7 @@ bool pRPL::Process::initOpenCL_Old()
     else
     {
       const char *name = _prcrName.c_str();
-      MPI_Send(name, 100, MPI_CHAR, 0, _id, _comm); //节点名发送给主节点
+      MPI_Send(name, 100, MPI_CHAR, 0, _id, _comm); // 节点名发送给主节点
       int gpuCount = node.getGPUIDs().size();
       MPI_Send(&gpuCount, 1, MPI_INT, 0, 2 * _id, _comm); // GPU数发给主节点
 

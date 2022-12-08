@@ -86,10 +86,10 @@ bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
     }
 
     /* Debug */
-    spdlog::info("GPU的初始ID: ");
-    for (int i = 0; i < totalDevice; i++)
-        cout << gpuIDs[i] << " ";
-    cout << endl;
+    // spdlog::info("GPU的初始ID: ");
+    // for (int i = 0; i < totalDevice; i++)
+    //     cout << gpuIDs[i] << " ";
+    // cout << endl;
 
     /* 销毁 */
     free(platforms);

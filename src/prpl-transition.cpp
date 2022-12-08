@@ -29,6 +29,13 @@ bool pRPL::Transition::initOpenCL(const char *filename, const char *kernelname, 
     return true;
 }
 
+bool pRPL::Transition::closeOpenCL()
+{
+    if (!openclManager.close())
+        return false;
+    return true;
+}
+
 pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
 {
     // cl_device_id device_id = this->deviceID;
@@ -42,13 +49,10 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
     cl_event event;
     cl_int err;
 
-    spdlog::info("ocLocal中GPU ID:");
-    cout << device_id << endl;
-
-    //左上角最小的x和最大的y，右下角最大的x与最小的y
-    int minY = br.minIRow(); //西北方
+    // 左上角最小的x和最大的y，右下角最大的x与最小的y
+    int minY = br.minIRow(); // 西北方
     int maxY = br.maxIRow();
-    int minX = br.minICol(); //西北方
+    int minX = br.minICol(); // 西北方
     int maxX = br.maxICol();
     int brs[4] = {minX, minY, maxX, maxY};
 
@@ -78,7 +82,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
     double cellWidth = cellspace->info()->georeference()->cellSize().x();
     double cellHeight = cellspace->info()->georeference()->cellSize().y();
 
-    //输入与输出的layer数量
+    // 输入与输出的layer数量
     int numInLayers = _vInLyrNames.size();
     int numOutLayers = _vOutLyrNames.size();
 
@@ -122,7 +126,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
     {
         spdlog::error("OpenCL: failed to get max work size");
-        moRPL::CleanUp(context, commandQueue, program, kernel, event);
+        openclManager.close();
         return pRPL::EvaluateReturn::EVAL_FAILED;
     }
 
@@ -161,7 +165,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
     {
         spdlog::error("OpenCL: failed to set kernel arg");
-        moRPL::CleanUp(context, commandQueue, program, kernel, event);
+        openclManager.close();
         return pRPL::EvaluateReturn::EVAL_FAILED;
     }
 
@@ -171,7 +175,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
 
     err = clEnqueueNDRangeKernel(commandQueue, kernel, 2, NULL, globalWorkSize, NULL, 0, NULL, &event); //&event
     clWaitForEvents(1, &event);
-    err = clFinish(commandQueue); //堵塞到命令队列中所有命令执行完毕
+    err = clFinish(commandQueue); // 堵塞到命令队列中所有命令执行完毕
 
     cl_ulong startTime = 0, endTime = 0;
     clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START,
@@ -186,7 +190,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
     {
         spdlog::error("OpenCL: failed to exec kernel");
-        moRPL::CleanUp(context, commandQueue, program, kernel, event);
+        openclManager.close();
         return pRPL::EvaluateReturn::EVAL_FAILED;
     }
 
@@ -197,7 +201,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
     {
         spdlog::error("OpenCL: failed to gpu to mem");
-        moRPL::CleanUp(context, commandQueue, program, kernel, event);
+        openclManager.close();
         return pRPL::EvaluateReturn::EVAL_FAILED;
     }
 
@@ -241,10 +245,6 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
         return pRPL::EVAL_FAILED;
     if (!moRPL::checkCLError(clReleaseMemObject(clNbrSize), __FILE__, __LINE__))
         return pRPL::EVAL_FAILED;
-    /* 清理GPU端 */
-    if (!moRPL::CleanUp(context, commandQueue, program, kernel, event))
-        return pRPL::EVAL_FAILED;
-
     spdlog::info("-----邻域计算完成-----");
 
     return pRPL::EVAL_SUCCEEDED;
@@ -263,19 +263,16 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     cl_event event;
     cl_int err;
 
-    spdlog::info("ocLocal中GPU ID:");
-    cout << device_id << endl;
-
     if (!openclManager.readGlobalSize())
     {
         return pRPL::EvaluateReturn::EVAL_FAILED;
     }
     spdlog::info("ocLocal中设备的内存大小:{}", openclManager.getGlobalSize());
 
-    //左上角最小的x和最大的y，右下角最大的x与最小的y
-    int minY = br.minIRow(); //西北方
+    // 左上角最小的x和最大的y，右下角最大的x与最小的y
+    int minY = br.minIRow(); // 西北方
     int maxY = br.maxIRow();
-    int minX = br.minICol(); //西北方
+    int minX = br.minICol(); // 西北方
     int maxX = br.maxICol();
     int brs[4] = {minX, minY, maxX, maxY};
 
@@ -305,7 +302,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     double cellWidth = cellspace->info()->georeference()->cellSize().x();
     double cellHeight = cellspace->info()->georeference()->cellSize().y();
 
-    //输入与输出的layer数量
+    // 输入与输出的layer数量
     int numInLayers = _vInLyrNames.size();
     int numOutLayers = _vOutLyrNames.size();
 
@@ -321,7 +318,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
         int width = cellspace->info()->dims().nCols();
 
         // spdlog::info("输入图层{} , {} {}", i, width, height);
-        totalLayerSize = totalLayerSize + height * width * cellspace->info()->dataSize(); //单位 字节
+        totalLayerSize = totalLayerSize + height * width * cellspace->info()->dataSize(); // 单位 字节
     }
     for (int i = 0; i < numOutLayers; i++)
     {
@@ -329,7 +326,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
         int height = cellspace->info()->dims().nRows();
         int width = cellspace->info()->dims().nCols();
         // spdlog::info("输出图层{} , {} {}", i, width, height);
-        totalLayerSize = totalLayerSize + height * width * cellspace->info()->dataSize(); //单位 字节
+        totalLayerSize = totalLayerSize + height * width * cellspace->info()->dataSize(); // 单位 字节
     }
 
     ulong memorySize = openclManager.getGlobalSize();
@@ -379,7 +376,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
     {
         spdlog::error("OpenCL: failed to get max work size");
-        moRPL::CleanUp(context, commandQueue, program, kernel, event);
+        openclManager.close();
         return pRPL::EvaluateReturn::EVAL_FAILED;
     }
 
@@ -418,7 +415,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
     {
         spdlog::error("OpenCL: failed to set kernel arg");
-        moRPL::CleanUp(context, commandQueue, program, kernel, event);
+        openclManager.close();
         return pRPL::EvaluateReturn::EVAL_FAILED;
     }
 
@@ -436,7 +433,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
         if (!moRPL::checkCLError(err, __FILE__, __LINE__))
         {
             spdlog::error("OpenCL: failed to write buffer");
-            moRPL::CleanUp(context, commandQueue, program, kernel, event);
+            openclManager.close();
             return pRPL::EvaluateReturn::EVAL_FAILED;
         }
     }
@@ -449,14 +446,14 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
         if (!moRPL::checkCLError(err, __FILE__, __LINE__))
         {
             spdlog::error("OpenCL: failed to write buffer");
-            moRPL::CleanUp(context, commandQueue, program, kernel, event);
+            openclManager.close();
             return pRPL::EvaluateReturn::EVAL_FAILED;
         }
     }
 
     err = clEnqueueNDRangeKernel(commandQueue, kernel, 2, NULL, globalWorkSize, NULL, 0, NULL, &event); //&event
     clWaitForEvents(1, &event);
-    err = clFinish(commandQueue); //堵塞到命令队列中所有命令执行完毕
+    err = clFinish(commandQueue); // 堵塞到命令队列中所有命令执行完毕
 
     cl_ulong startTime = 0, endTime = 0;
     clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START,
@@ -471,7 +468,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
     {
         spdlog::error("OpenCL: failed to exec kernel");
-        moRPL::CleanUp(context, commandQueue, program, kernel, event);
+        openclManager.close();
         return pRPL::EvaluateReturn::EVAL_FAILED;
     }
 
@@ -482,7 +479,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
     {
         spdlog::error("OpenCL: failed to gpu to mem");
-        moRPL::CleanUp(context, commandQueue, program, kernel, event);
+        openclManager.close();
         return pRPL::EvaluateReturn::EVAL_FAILED;
     }
 
@@ -525,9 +522,6 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     if (!moRPL::checkCLError(clReleaseMemObject(clNbrCoords), __FILE__, __LINE__))
         return pRPL::EVAL_FAILED;
     if (!moRPL::checkCLError(clReleaseMemObject(clNbrSize), __FILE__, __LINE__))
-        return pRPL::EVAL_FAILED;
-    /* 清理GPU端 */
-    if (!moRPL::CleanUp(context, commandQueue, program, kernel, event))
         return pRPL::EVAL_FAILED;
 
     spdlog::info("-----邻域计算完成-----");

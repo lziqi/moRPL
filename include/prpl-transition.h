@@ -9,7 +9,6 @@
 #include <CL/cl.h>
 #include <spdlog/spdlog.h>
 #include "morpl-Error.h"
-#include "morpl-OperatorDevice.h"
 #include "morpl-openclManager.h"
 #include <ctime>
 
@@ -23,6 +22,8 @@ namespace pRPL
 
   public:
     bool initOpenCL(const char *filename, const char *kernelname, cl_device_id device_id);
+
+    bool closeOpenCL();
 
     /*邻域栅格计算*/
     pRPL::EvaluateReturn ocLocalOperator(const pRPL::CoordBR &br); /*oc OpenCL*/

@@ -1,6 +1,6 @@
 #include "morpl-openclManager.h"
 
-bool moRPL::OpenCLManager::clear()
+bool moRPL::OpenCLManager::close()
 {
     if (commandQueue == 0 || !moRPL::checkCLError(clReleaseCommandQueue(commandQueue), __FILE__, __LINE__))
         return false;
@@ -53,7 +53,7 @@ bool moRPL::OpenCLManager::createContext()
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
     {
         spdlog::error("OpenCL: failed to create context for device");
-        clear();
+        close();
         return false;
     }
 
@@ -69,7 +69,7 @@ bool moRPL::OpenCLManager::createCommandQueue()
     if (commandQueue == NULL)
     {
         spdlog::error("OpenCL: failed to create commandqueue for device");
-        clear();
+        close();
         return false;
     }
     return true;
@@ -140,7 +140,7 @@ bool moRPL::OpenCLManager::createKernel(const char *kernelname)
     if (kernel == NULL)
     {
         spdlog::error("OpenCL: failed to create kernel");
-        clear();
+        close();
         return false;
     }
     return true;

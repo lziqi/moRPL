@@ -19,7 +19,6 @@ namespace moRPL
         cl_command_queue commandQueue;
         cl_program program;
         cl_kernel kernel;
-
     private:
         char *readKernel(const char *filename);
 
@@ -46,7 +45,7 @@ namespace moRPL
          */
 
         /* 清理OpenCL资源 */
-        bool clear();
+        bool close();
 
         /* 设置device_id */
         void setDeviceID(cl_device_id device_id);
