@@ -947,7 +947,6 @@ pRPL::EvaluateReturn pRPL::DataManager::
              pRPL::EvaluateBR br2Eval,
              bool ifInitNoData)
 {
-    spdlog::info("evalALL");
     if (br2Eval != pRPL::EVAL_WORKBR)
     {
         if (subspcGlbID == pRPL::ERROR_ID)

@@ -24,7 +24,7 @@ bool pRPL::Process::initOpenCL()
       processNode[_id] = _prcrName;
       processGPU[_id] = node.getGPUIDs();
 
-      spdlog::info("nTotalPrcs {}", _nTotalPrcs);
+      spdlog::debug("nTotalPrcs {}", _nTotalPrcs);
       /* 生成节点 --- CPU、GPU对应表 */
       for (int i = 1; i < _nTotalPrcs; i++)
       {
@@ -33,12 +33,12 @@ bool pRPL::Process::initOpenCL()
         int gpuCount;
 
         MPI_Recv(_name, 100, MPI_CHAR, i, i, _comm, &status);
-        spdlog::info("接收name完成");
+        spdlog::debug("接收name完成");
         MPI_Recv(&gpuCount, 1, MPI_INT, i, 2 * i, _comm, &status);
-        spdlog::info("接收gpuCount完成");
+        spdlog::debug("接收gpuCount完成");
         vector<cl_device_id> gpuIDs(gpuCount);
         MPI_Recv(&gpuIDs[0], gpuCount, MPI_DOUBLE, i, 3 * i, _comm, &status);
-        spdlog::info("接收gpuIds完成");
+        spdlog::debug("接收gpuIds完成");
 
         processNode[i] = _name;
         processGPU[i] = gpuIDs;
@@ -167,7 +167,7 @@ bool pRPL::Process::initOpenCL_Old()
         vector<cl_device_id> gpuIDs(gpuCount);
 
         MPI_Recv(&gpuIDs[0], gpuCount, MPI_DOUBLE, i, 3 * i, _comm, &status);
-        spdlog::info("0进程 接收到 {}进程 的GPUID : ", i);
+        spdlog::debug("0进程 接收到 {}进程 的GPUID : ", i);
         for (int i = 0; i < gpuIDs.size(); i++)
           cout << gpuIDs[i] << endl;
 
@@ -185,7 +185,7 @@ bool pRPL::Process::initOpenCL_Old()
           it->second.push_back(i);
       }
 
-      spdlog::info("GPU对应表:");
+      spdlog::debug("GPU对应表:");
       for (auto &i : nodeGpu)
       {
         cout << i.first << " " << i.second[0] << endl;
@@ -210,7 +210,7 @@ bool pRPL::Process::initOpenCL_Old()
           else // 主进程
           {
             node.setGPUID(gpus[gpuIndex]);
-            spdlog::info("主进程GPUID : ");
+            spdlog::debug("主进程GPUID : ");
             cout << gpus[gpuIndex] << endl;
           }
         }
@@ -223,7 +223,7 @@ bool pRPL::Process::initOpenCL_Old()
       int gpuCount = node.getGPUIDs().size();
       MPI_Send(&gpuCount, 1, MPI_INT, 0, 2 * _id, _comm); // GPU数发给主节点
 
-      spdlog::info("{}进程 发送的GPUID:", _id);
+      spdlog::debug("{}进程 发送的GPUID:", _id);
       for (int i = 0; i < node.getGPUIDs().size(); i++)
         cout << node.getGPUIDs()[i] << endl;
 
@@ -233,7 +233,7 @@ bool pRPL::Process::initOpenCL_Old()
       MPI_Recv(&gpuID, 1, MPI_DOUBLE, 0, 4 * _id, _comm, &status);
 
       node.setGPUID(gpuID);
-      spdlog::info("其他进程GPUID : ");
+      spdlog::debug("其他进程GPUID : ");
       cout << gpuID << endl;
     }
   }

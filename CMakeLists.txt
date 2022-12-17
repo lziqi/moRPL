@@ -17,7 +17,7 @@ find_library(LOG_LIB spdlog PATHS ${PROJECT_SOURCE_DIR}/lib/spdlog/lib) #CMAKE_F
 find_library(TIFF_LIB tiff PATHS ${PROJECT_SOURCE_DIR}/lib/tiff/lib)
 
 # gdal
-find_library(GDAL_LIB gdal PATHS ${PROJECT_SOURCE_DIR}/lib/gdal/lib)
+find_library(GDAL_LIB gdal PATHS ${PROJECT_SOURCE_DIR}/../lib/gdal/lib)
 
 # mpi
 find_package(MPI REQUIRED)
@@ -33,7 +33,7 @@ aux_source_directory(src SRC)
 add_executable(main main.cpp ${SRC})
 
 # tiff spdlog gdal mpi opencl 
-include_directories(${PROJECT_SOURCE_DIR}/lib/tiff/include ${PROJECT_SOURCE_DIR}/lib/spdlog/include ${PROJECT_SOURCE_DIR}/lib/gdal/include ${MPI_INCLUDE_PATH} /usr/include/CL )
+include_directories(${PROJECT_SOURCE_DIR}/lib/tiff/include ${PROJECT_SOURCE_DIR}/lib/spdlog/include ${PROJECT_SOURCE_DIR}/../lib/gdal/include ${MPI_INCLUDE_PATH} /usr/include/CL )
 target_link_libraries(main ${TIFF_LIB} ${LOG_LIB} ${GDAL_LIB} ${MPI_LIBRARIES} ${OPENCL_LIB})
 
 # 安装

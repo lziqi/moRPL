@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/include/gdal",
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/../lib/gdal/include",
                 "/usr/lib/x86_64-linux-gnu/openmpi/include",
                 "/usr/include/CL"
             ],

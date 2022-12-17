@@ -58,10 +58,10 @@ kernel void test(global unsigned char *inData, global unsigned char *outData,
 }
 
 kernel void rf_ca(global unsigned char *inData, global unsigned char *outData,
-                  global int *_width, global int *_height, global int *br,
-                  global int *step, global int *_nbrCoord, global int *_nbrSize,
+                  constant int *_width, constant int *_height, constant int *br,
+                  constant int *step, constant int *_nbrCoord, constant int *_nbrSize,
                   local int *nbrCoord, global unsigned char *limitData,
-                  global unsigned char *probData, global float *_thold) {
+                  global unsigned char *probData, constant float *_thold) {
   int gid_x = get_global_id(0) * step[0];
   int gid_y = get_global_id(1) * step[1];
   int width = _width[0];

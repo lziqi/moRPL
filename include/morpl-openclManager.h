@@ -2,6 +2,7 @@
 #define OPENCL_MANAGER__H
 
 #include <stdio.h>
+#include <iostream>
 #include <CL/cl.h>
 #include "morpl-Error.h"
 

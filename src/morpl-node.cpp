@@ -2,7 +2,7 @@
 
 bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
 {
-    spdlog::info("-----OpenCL设备初始化-----");
+    spdlog::debug("-----OpenCL设备初始化-----");
     cl_int err;
 
     cl_platform_id *platforms;
@@ -16,7 +16,7 @@ bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
     err = clGetPlatformIDs(0, NULL, &numPlatform);
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
         return false;
-    spdlog::info("OpenCL平台数 : {}", numPlatform);
+    spdlog::debug("OpenCL平台数 : {}", numPlatform);
 
     //初始化平台
     platforms = (cl_platform_id *)malloc(sizeof(cl_platform_id) * numPlatform);
@@ -29,7 +29,7 @@ bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
             return false;
         devices = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevice);
         this->gpuCount = numDevice;
-        spdlog::info("平台{}上GPU设备数 : {}", i, numDevice);
+        spdlog::debug("平台{}上GPU设备数 : {}", i, numDevice);
 
         //获取GPU设备对应ID
         err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, numDevice, devices, NULL);
@@ -60,7 +60,7 @@ bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
             err = clGetDeviceInfo(devices[j], CL_DEVICE_GLOBAL_MEM_SIZE, size, &globalSize, NULL);
             if (!moRPL::checkCLError(err, __FILE__, __LINE__))
                 return false;
-            spdlog::info("设备{}的内存 :{}", j, globalSize);
+            spdlog::debug("设备{}的内存 :{}", j, globalSize);
             // cout << globalSize << endl;
         }
 
@@ -86,7 +86,7 @@ bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
     }
 
     /* Debug */
-    // spdlog::info("GPU的初始ID: ");
+    spdlog::debug("GPU的初始ID: ");
     // for (int i = 0; i < totalDevice; i++)
     //     cout << gpuIDs[i] << " ";
     // cout << endl;
@@ -94,7 +94,7 @@ bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
     /* 销毁 */
     free(platforms);
     platforms = NULL;
-    spdlog::info("-----OpenCL设备初始化完成-----");
+    spdlog::debug("-----OpenCL设备初始化完成-----");
     return true;
 }
 

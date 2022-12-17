@@ -38,8 +38,7 @@ bool pRPL::Transition::closeOpenCL()
 
 pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
 {
-    // cl_device_id device_id = this->deviceID;
-    spdlog::info("-----邻域计算-----");
+    spdlog::debug("-----邻域计算-----");
 
     cl_device_id device_id = openclManager.getDeviceID();
     cl_context context = openclManager.getContext();
@@ -95,7 +94,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
         cellspace = getCellspaceByLyrName(getInLyrNames()[i]);
         int height = cellspace->info()->dims().nRows();
         int width = cellspace->info()->dims().nCols();
-        spdlog::info("输入图层{} , {} {}", i, width, height);
+        spdlog::debug("输入图层{} , {} {}", i, width, height);
 
         InData[i] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, width * height * cellspace->info()->dataSize(), cellspace->getData(), NULL);
     }
@@ -106,7 +105,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
         cellspace = getCellspaceByLyrName(getOutLyrNames()[i]);
         int height = cellspace->info()->dims().nRows();
         int width = cellspace->info()->dims().nCols();
-        spdlog::info("输出图层{} , {} {}", i, width, height);
+        spdlog::debug("输出图层{} , {} {}", i, width, height);
 
         OutData[i] = clCreateBuffer(context, CL_MEM_READ_WRITE, width * height * cellspace->info()->dataSize(), NULL, NULL);
     }
@@ -169,7 +168,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
         return pRPL::EvaluateReturn::EVAL_FAILED;
     }
 
-    spdlog::info("OpenCL参数信息 : maxWorkSize {} {} , step {} {}", maxWorkSize[0], maxWorkSize[1], step[0], step[1]);
+    spdlog::debug("OpenCL参数信息 : maxWorkSize {} {} , step {} {}", maxWorkSize[0], maxWorkSize[1], step[0], step[1]);
     size_t globalWorkSize[2] = {maxWorkSize[0], maxWorkSize[1]};
     size_t localWorkSize[2] = {1, 1};
 
@@ -186,7 +185,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
     cl_ulong kernelExecTimeNs = endTime - startTime;
 
     /* 执行时间 */
-    spdlog::info("Kernel耗时 : {} ms", kernelExecTimeNs * 1e-6);
+    spdlog::debug("Kernel耗时 : {} ms", kernelExecTimeNs * 1e-6);
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
     {
         spdlog::error("OpenCL: failed to exec kernel");
@@ -245,7 +244,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
         return pRPL::EVAL_FAILED;
     if (!moRPL::checkCLError(clReleaseMemObject(clNbrSize), __FILE__, __LINE__))
         return pRPL::EVAL_FAILED;
-    spdlog::info("-----邻域计算完成-----");
+    spdlog::debug("-----邻域计算完成-----");
 
     return pRPL::EVAL_SUCCEEDED;
 }
@@ -253,7 +252,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
 pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordBR &br)
 {
     // cl_device_id device_id = this->deviceID;
-    spdlog::info("-----邻域计算-----");
+    spdlog::debug("-----邻域计算-----");
 
     cl_device_id device_id = openclManager.getDeviceID();
     cl_context context = openclManager.getContext();
@@ -263,11 +262,11 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     cl_event event;
     cl_int err;
 
-    if (!openclManager.readGlobalSize())
-    {
-        return pRPL::EvaluateReturn::EVAL_FAILED;
-    }
-    spdlog::info("ocLocal中设备的内存大小:{}", openclManager.getGlobalSize());
+    // if (!openclManager.readGlobalSize())
+    // {
+    //     return pRPL::EvaluateReturn::EVAL_FAILED;
+    // }
+    // spdlog::info("ocLocal中设备的内存大小:{}", openclManager.getGlobalSize());
 
     // 左上角最小的x和最大的y，右下角最大的x与最小的y
     int minY = br.minIRow(); // 西北方
@@ -369,7 +368,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     cl_mem clHeight = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(int), &height, NULL);
     cl_mem clBR = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(int) * 4, brs, NULL);
 
-    spdlog::info("设置worksize、step");
+    spdlog::debug("设置worksize、step");
     /* 设置WorkSize与Step */
     cl_uint maxDimension;
     err = clGetDeviceInfo(device_id, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), &maxDimension, NULL);
@@ -419,7 +418,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
         return pRPL::EvaluateReturn::EVAL_FAILED;
     }
 
-    spdlog::info("OpenCL参数信息 : maxWorkSize {} {} , step {} {}", maxWorkSize[0], maxWorkSize[1], step[0], step[1]);
+    spdlog::debug("OpenCL参数信息 : maxWorkSize {} {} , step {} {}", maxWorkSize[0], maxWorkSize[1], step[0], step[1]);
     size_t globalWorkSize[2] = {maxWorkSize[0], maxWorkSize[1]};
     size_t localWorkSize[2] = {1, 1};
 
@@ -427,6 +426,8 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     for (int i = 0; i < numInLayers; i++)
     {
         cellspace = getCellspaceByLyrName(getInLyrNames()[i]);
+        int height = cellspace->info()->dims().nRows();
+        int width = cellspace->info()->dims().nCols();
 
         err = clEnqueueWriteBuffer(commandQueue, InData[i], CL_TRUE, 0, height * width * cellspace->info()->dataSize(), cellspace->getData(), 0, NULL, NULL);
 
@@ -440,6 +441,8 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     for (int i = 0; i < numOutLayers; i++)
     {
         cellspace = getCellspaceByLyrName(getOutLyrNames()[i]);
+        int height = cellspace->info()->dims().nRows();
+        int width = cellspace->info()->dims().nCols();
 
         err = clEnqueueWriteBuffer(commandQueue, OutData[i], CL_TRUE, 0, height * width * cellspace->info()->dataSize(), cellspace->getData(), 0, NULL, NULL);
 
@@ -464,7 +467,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     cl_ulong kernelExecTimeNs = endTime - startTime;
 
     /* 执行时间 */
-    spdlog::info("Kernel耗时 : {} ms", kernelExecTimeNs * 1e-6);
+    spdlog::debug("Kernel耗时 : {} ms", kernelExecTimeNs * 1e-6);
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
     {
         spdlog::error("OpenCL: failed to exec kernel");
@@ -483,18 +486,12 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
         return pRPL::EvaluateReturn::EVAL_FAILED;
     }
 
-    clock_t start, end;
-    start = clock();
-
     for (int i = 0; i < numOutLayers; i++)
     {
         cellspace = getCellspaceByLyrName(getOutLyrNames()[i]);
         cellspace->updateData(res, cellspace->info()->dataSize() * width * height);
         cellspace->updateCellspaceAs(br, res);
     }
-
-    end = clock();
-    // spdlog::info("写回Cellspace耗时: {} ms", (end - start) / 1000);
 
     /* 清理内存 */
     free(res);
@@ -524,7 +521,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
     if (!moRPL::checkCLError(clReleaseMemObject(clNbrSize), __FILE__, __LINE__))
         return pRPL::EVAL_FAILED;
 
-    spdlog::info("-----邻域计算完成-----");
+    spdlog::debug("-----邻域计算完成-----");
 
     return pRPL::EVAL_SUCCEEDED;
 }
@@ -831,7 +828,7 @@ bool pRPL::Transition::
 pRPL::EvaluateReturn pRPL::Transition::
     evalBR(const pRPL::CoordBR &br, bool GPUCompute, pRPL::pCuf pf)
 {
-    spdlog::info("evalBR");
+    spdlog::debug("evalBR");
     pRPL::Cellspace *pPrmSpc = getCellspaceByLyrName(getPrimeLyrName());
 
     if (pPrmSpc == NULL)

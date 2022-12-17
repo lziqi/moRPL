@@ -10,8 +10,8 @@
 
 #include <CL/cl.h>
 #include <spdlog/spdlog.h>
+#include "spdlog/cfg/env.h"
 #include "morpl-Error.h"
-#include "morpl-Test.h"
 #include "demoTrans.h"
 #include <time.h>
 
@@ -19,6 +19,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+    spdlog::cfg::load_env_levels();
     // 初始化DataManager
     bool withWriter = 0;
     pRPL::DataManager dataManager;
@@ -34,16 +35,16 @@ int main(int argc, char *argv[])
         start_time = MPI_Wtime();
 
     /*初始化参数*/
-    int nRowSubspcs = 1;
-    int nColSubspcs = 1;
+    int nRowSubspcs = 4;
+    int nColSubspcs = 4;
 
     pRPL::ReadingOption readOpt = pRPL::CENTDEL_READING;
     pRPL::WritingOption writeOpt = pRPL::CENTDEL_WRITING; // pRPL::CENTDEL_WRITING
 
     /*加入输入图层*/
-    pRPL::Layer *inLayer = dataManager.addLayerByGDAL("inputLayer", "./data/rf-ca/dg2001.tif", 1, true); //./data/resample/dg2001_1.tif
-    pRPL::Layer *limitLayer = dataManager.addLayerByGDAL("limitLayer", "./data/rf-ca/river2001.tif", 1, true);
-    pRPL::Layer *probLayer = dataManager.addLayerByGDAL("probLayer", "./data/rf-ca/prob.tif", 1, true);
+    pRPL::Layer *inLayer = dataManager.addLayerByGDAL("inputLayer", "../data/resample/dg2001_1.tif", 1, true); //./data/resample/dg2001_1.tif
+    pRPL::Layer *limitLayer = dataManager.addLayerByGDAL("limitLayer", "../data/resample/river2001_1.tif", 1, true);
+    pRPL::Layer *probLayer = dataManager.addLayerByGDAL("probLayer", "../data/resample/prob2001_1.tif", 1, true);
 
     const pRPL::SpaceDims &spaceDim = *(inLayer->glbDims());
     const pRPL::CellspaceGeoinfo *cellspaceGeoInfo = inLayer->glbGeoinfo();
@@ -61,9 +62,9 @@ int main(int argc, char *argv[])
     // pRPL::Transition transition;
     DemoTransition transition;
     transition.setNbrhdByName(neighborhood3x3->name());
-    transition.addInputLyr(inLayer->name(), false);
-    transition.addInputLyr(limitLayer->name(), false);
-    transition.addInputLyr(probLayer->name(), false);
+    // transition.addInputLyr(inLayer->name(), false);
+    // transition.addInputLyr(limitLayer->name(), false);
+    // transition.addInputLyr(probLayer->name(), false);
 
     /*创建输出图层*/
     string outLayerName;
@@ -78,7 +79,7 @@ int main(int argc, char *argv[])
             transition.addOutputLyr(outLayer->name(), true);
 
             /*分解图层*/
-            spdlog::info("分解图层");
+            spdlog::debug("分解图层");
             if (!dataManager.dcmpLayers(transition, nRowSubspcs, nColSubspcs))
             {
                 dataManager.mpiPrc().abort();
@@ -101,7 +102,7 @@ int main(int argc, char *argv[])
             transition.addOutputLyr(inLayer->name(), true);
 
             /*分解图层*/
-            spdlog::info("分解图层");
+            spdlog::debug("分解图层");
             if (!dataManager.dcmpLayers(transition, nRowSubspcs, nColSubspcs))
             {
                 dataManager.mpiPrc().abort();
@@ -117,10 +118,10 @@ int main(int argc, char *argv[])
         }
         dataManager.mpiPrc().sync();
 
-        pRPL::pCuf pf = &pRPL::Transition::ocLocalOperator;//ocLocalSegmentOperator;
+        pRPL::pCuf pf = &pRPL::Transition::ocLocalSegmentOperator;//ocLocalSegmentOperator; ocLocalOperator
 
         /*开始计算任务*/
-        spdlog::info("初始化任务");
+        spdlog::debug("初始化任务");
         if (!dataManager.initStaticTask(transition, pRPL::CYLC_MAP, readOpt))
         {
             return -1;
@@ -136,8 +137,8 @@ int main(int argc, char *argv[])
 
         /* GPU设备信息: */
         cl_device_id gpuID = dataManager.getProcess().getNode().getGPUID();
-        spdlog::info("main中获取到的GPU设备信息:");
-        cout << gpuID << endl;
+        spdlog::debug("main中获取到的GPU设备信息:");
+        // cout << gpuID << endl;
 
         if (!transition.initOpenCL("OpenCL/add.cl", "rf_ca", gpuID))
         {
@@ -163,7 +164,7 @@ int main(int argc, char *argv[])
         if (dataManager.mpiPrc().isMaster())
             execEndTime = MPI_Wtime();
 
-        spdlog::info("GPU计算耗时:{} ms", (execEndTime - execStartTime) * 1000);
+        spdlog::debug("GPU计算耗时:{} ms", (execEndTime - execStartTime) * 1000);
 
         transition.clearLyrSettings();
     }
