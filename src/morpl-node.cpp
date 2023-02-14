@@ -7,31 +7,35 @@ bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
 
     cl_platform_id *platforms;
     cl_device_id *devices;
+    cl_ulong *deviceMemorys;
 
     cl_uint numPlatform;
     cl_uint numDevice;
-    int totalDevice = 0; //所有平台上的device总数
+    int totalDevice = 0; // 所有平台上的device总数
 
-    //获取平台数
+    // 获取平台数
     err = clGetPlatformIDs(0, NULL, &numPlatform);
     if (!moRPL::checkCLError(err, __FILE__, __LINE__))
         return false;
     spdlog::debug("OpenCL平台数 : {}", numPlatform);
 
-    //初始化平台
+    // 初始化平台
     platforms = (cl_platform_id *)malloc(sizeof(cl_platform_id) * numPlatform);
     err = clGetPlatformIDs(numPlatform, platforms, NULL);
     for (int i = 0; i < numPlatform; i++)
     {
-        //获得平台上的GPU设备数量
+        // 获得平台上的GPU设备数量
         err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, 0, NULL, &numDevice);
         if (!moRPL::checkCLError(err, __FILE__, __LINE__))
             return false;
+
         devices = (cl_device_id *)malloc(sizeof(cl_device_id) * numDevice);
+        deviceMemorys = (cl_ulong *)malloc(sizeof(cl_ulong) * numDevice);
+
         this->gpuCount = numDevice;
         spdlog::debug("平台{}上GPU设备数 : {}", i, numDevice);
 
-        //获取GPU设备对应ID
+        // 获取GPU设备对应ID
         err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, numDevice, devices, NULL);
         if (!moRPL::checkCLError(err, __FILE__, __LINE__))
             return false;
@@ -61,7 +65,9 @@ bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
             if (!moRPL::checkCLError(err, __FILE__, __LINE__))
                 return false;
             spdlog::debug("设备{}的内存 :{}", j, globalSize);
-            // cout << globalSize << endl;
+            cout << globalSize << endl;
+
+            deviceMemorys[j] = globalSize;
         }
 
         if (deviceOption == pRPL::DeviceOption::DEVICE_ALL)
@@ -69,6 +75,7 @@ bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
             for (int j = 0; j < numDevice; j++)
             {
                 gpuIDs.push_back(devices[j]);
+                gpuMemorys.push_back(deviceMemorys[j]);
                 totalDevice += 1;
             }
         }
@@ -79,6 +86,7 @@ bool moRPL::Node::init(pRPL::DeviceOption deviceOption)
                 if (deviceOption == device_types[j])
                 {
                     gpuIDs.push_back(devices[j]);
+                    gpuMemorys.push_back(deviceMemorys[j]);
                     totalDevice += 1;
                 }
             }
@@ -121,6 +129,11 @@ int moRPL::Node::getGPUCount()
 vector<cl_device_id> moRPL::Node::getGPUIDs()
 {
     return this->gpuIDs;
+}
+
+vector<cl_ulong> moRPL::Node::getGPUMemorys()
+{
+    return this->gpuMemorys;
 }
 
 void moRPL::Node::setID(int id)

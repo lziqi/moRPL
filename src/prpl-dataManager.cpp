@@ -1,4 +1,49 @@
 #include "prpl-dataManager.h"
+
+/* moRPL */
+bool pRPL::DataManager::allocSubspc()
+{
+    cl_ulong minGPUMemory = 0; /* mb */
+    int layerSize = 0;         /* 所有图层大小 */
+
+    list<pRPL::Layer>::iterator itrLyr = _lLayers.begin();
+    spdlog::debug("_lLayers size: {}", _lLayers.size());
+    while (itrLyr != _lLayers.end())
+    {
+        spdlog::debug("layer size : {} {} {} {}", itrLyr->dataSize(), itrLyr->glbDims()->nRows(), itrLyr->glbDims()->nCols(), itrLyr->dataSize() * itrLyr->glbDims()->nRows() * itrLyr->glbDims()->nCols());
+        layerSize += (itrLyr->dataSize() * itrLyr->glbDims()->nRows() * itrLyr->glbDims()->nCols()) / (1024 * 1024);
+        itrLyr++;
+    }
+    spdlog::debug("分配切片,所有图层大小 {} mb", layerSize);
+
+    vector<cl_ulong> gpuMemorys = _prc.getNode().getGPUMemorys();
+    if (gpuMemorys.size() <= 0)
+        return false;
+
+    minGPUMemory = gpuMemorys[0];
+    for (cl_ulong gpuMemory : gpuMemorys)
+    {
+        if (gpuMemory <= minGPUMemory)
+            minGPUMemory = gpuMemory;
+    }
+
+    minGPUMemory = minGPUMemory / (1024 * 1024);
+    spdlog::debug("集群最小显存大小 {} mb", minGPUMemory);
+
+    minGPUMemory = minGPUMemory / 2;
+
+    int rowSubspcs = 1;
+    int colSubspcs = 2;
+    if (layerSize >= minGPUMemory)
+    {
+        rowSubspcs = ((layerSize - 1) / (minGPUMemory * colSubspcs)) + 1;
+    }
+
+    spdlog::info("分配为: {} {}", rowSubspcs, colSubspcs);
+
+    return true;
+}
+
 /****************************************************
  *                 Protected Methods                 *
  ****************************************************/

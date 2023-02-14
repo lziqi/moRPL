@@ -35,8 +35,8 @@ int main(int argc, char *argv[])
         start_time = MPI_Wtime();
 
     /*初始化参数*/
-    int nRowSubspcs = 4;
-    int nColSubspcs = 4;
+    int nRowSubspcs = 1;
+    int nColSubspcs = 1;
 
     pRPL::ReadingOption readOpt = pRPL::CENTDEL_READING;
     pRPL::WritingOption writeOpt = pRPL::CENTDEL_WRITING; // pRPL::CENTDEL_WRITING
@@ -120,6 +120,7 @@ int main(int argc, char *argv[])
 
         pRPL::pCuf pf = &pRPL::Transition::ocLocalSegmentOperator;//ocLocalSegmentOperator; ocLocalOperator
 
+        dataManager.allocSubspc();
         /*开始计算任务*/
         spdlog::debug("初始化任务");
         if (!dataManager.initStaticTask(transition, pRPL::CYLC_MAP, readOpt))

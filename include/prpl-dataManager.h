@@ -25,6 +25,8 @@ namespace pRPL
       return this->_prc;
     }
 
+    /* 自适应分配切片 */
+    bool allocSubspc();
   public:
     /* Constructor and destructor */
     DataManager();

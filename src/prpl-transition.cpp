@@ -94,6 +94,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalOperator(const pRPL::CoordBR &br)
         cellspace = getCellspaceByLyrName(getInLyrNames()[i]);
         int height = cellspace->info()->dims().nRows();
         int width = cellspace->info()->dims().nCols();
+
         spdlog::debug("输入图层{} , {} {}", i, width, height);
 
         InData[i] = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, width * height * cellspace->info()->dataSize(), cellspace->getData(), NULL);
@@ -339,7 +340,7 @@ pRPL::EvaluateReturn pRPL::Transition::ocLocalSegmentOperator(const pRPL::CoordB
         cellspace = getCellspaceByLyrName(getInLyrNames()[i]);
         int height = cellspace->info()->dims().nRows();
         int width = cellspace->info()->dims().nCols();
-
+        
         spdlog::info("输入图层{} , {} {}", i, width, height);
         InData[i] = clCreateBuffer(context, CL_MEM_READ_ONLY, width * height * cellspace->info()->dataSize(), NULL, &err);
         if (InData[i] == NULL)
